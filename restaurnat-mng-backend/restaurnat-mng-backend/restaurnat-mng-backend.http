@@ -1,0 +1,6 @@
+@restaurnat_mng_backend_HostAddress = http://localhost:5039
+
+GET {{restaurnat_mng_backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

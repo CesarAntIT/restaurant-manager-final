@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "l2ljhYPaN6o=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\cesar\\Desktop\\Coding Projects\\School Work\\FullStack\\ProyectoFinal-Restaurante\\restaurnat-mng-backend\\restaurnat-mng-backend\\restaurnat-mng-backend.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\cesar\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.14\\microsoft.aspnetcore.openapi.9.0.14.nupkg.sha512",
+    "C:\\Users\\cesar\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512",
+    "C:\\Users\\cesar\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.22.1\\microsoft.visualstudio.azure.containers.tools.targets.1.22.1.nupkg.sha512"
+  ],
+  "logs": []
+}
