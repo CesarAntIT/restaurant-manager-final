@@ -1,0 +1,3 @@
+# Archivos de entorno y base de datos
+.env
+db_data/
