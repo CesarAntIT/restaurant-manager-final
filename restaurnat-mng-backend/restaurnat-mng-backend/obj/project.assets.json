@@ -163,19 +163,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\eudyy\\.nuget\\packages\\": {}
+    "C:\\Users\\admin\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\eudyy\\Desktop\\Proyecto_Final_ITLA\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\restaurnat-mng-backend.csproj",
-      "projectName": "restaurnat-mng-backend",
-      "projectPath": "C:\\Users\\eudyy\\Desktop\\Proyecto_Final_ITLA\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\restaurnat-mng-backend.csproj",
-      "packagesPath": "C:\\Users\\eudyy\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\eudyy\\Desktop\\Proyecto_Final_ITLA\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\obj\\",
+      "projectUniqueName": "C:\\Users\\admin\\Desktop\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\TableUpApi.csproj",
+      "projectName": "TableUpApi",
+      "projectPath": "C:\\Users\\admin\\Desktop\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\TableUpApi.csproj",
+      "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\admin\\Desktop\\restaurant-manager-final\\restaurnat-mng-backend\\restaurnat-mng-backend\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\eudyy\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -188,6 +193,7 @@
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "projectReferences": {}
         }
@@ -202,10 +208,11 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net9.0": {
+        "framework": "net9.0",
         "targetAlias": "net9.0",
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": {
@@ -228,24 +235,6 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[9.0.16, 9.0.16]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.win-x64",
-            "version": "[9.0.16, 9.0.16]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[9.0.16, 9.0.16]"
-          },
-          {
-            "name": "Microsoft.WindowsDesktop.App.Ref",
-            "version": "[9.0.16, 9.0.16]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -254,7 +243,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.108/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
