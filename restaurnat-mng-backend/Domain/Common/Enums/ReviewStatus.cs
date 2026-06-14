@@ -2,7 +2,7 @@
 {
     public enum ReviewStatus
     {
-        Visible,
-        Moderado
+        Visible = 1,
+        Moderated
     }
 }

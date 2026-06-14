@@ -13,6 +13,5 @@
         Task<int> UpdateRangeAsync(IEnumerable<Entity> entities);
         Task<List<Entity>> GetAllListWithInclude(List<string> properties);
         IQueryable<Entity> GetAllQueryWithInclude(List<string> properties);
-
     }
 }

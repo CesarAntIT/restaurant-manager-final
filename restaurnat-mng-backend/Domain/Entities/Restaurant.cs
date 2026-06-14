@@ -5,7 +5,7 @@ namespace Domain.Entities
     public class Restaurant
     {
         public required int Id { get; set; }
-        public required string OwnerId { get; set; } // FK a Users
+        public required string OwnerId { get; set; } // fk
         public required string Name { get; set; }
         public required string Category { get; set; }
         public RestaurantStatus Status { get; set; }

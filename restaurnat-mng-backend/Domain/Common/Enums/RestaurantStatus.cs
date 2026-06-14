@@ -2,8 +2,8 @@
 {
     public enum RestaurantStatus
     {
-        Pendiente,
-        Aprobado,
-        Rechazado
+        Pending = 1,
+        Approved,
+        Rejected
     }
 }

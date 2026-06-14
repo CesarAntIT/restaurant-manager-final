@@ -1,7 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
-using System.Reflection.Emit;
 
 namespace Infrastructure.Persistence.Contexts
 {
@@ -14,6 +13,11 @@ namespace Infrastructure.Persistence.Contexts
         public DbSet<Menu> Menus { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<WorkDay> WorkDays { get; set; }
+        public DbSet<WorkDayItem> WorkDayItems { get; set; }
+        public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<DishIngredient> DishIngredients { get; set; }
+        public DbSet<PredictionIA> PredictionsIA { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

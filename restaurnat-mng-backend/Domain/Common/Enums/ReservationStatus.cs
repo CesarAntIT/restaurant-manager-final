@@ -2,9 +2,9 @@
 {
     public enum ReservationStatus
     {
-        Pendiente,
-        Confirmada,
-        Cancelada,
-        Asistida
+        Pending = 1,
+        Confirmed,
+        Cancelled,
+        Attended 
     }
 }

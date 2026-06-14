@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.5.11716.220 stable
+VisualStudioVersion = 18.5.11716.220
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableUpApi", "restaurnat-mng-backend\TableUpApi.csproj", "{3B09EFD8-7292-4D8D-B258-24C38D9C80AD}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Persistence", "Infrastructure.Persistence\Infrastructure.Persistence.csproj", "{B3128657-3E2B-4CC6-930C-DCFF1F36133C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{2920E804-EB53-4067-9C9A-AAED8F96100C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Shared", "Infrastructure.Shared\Infrastructure.Shared.csproj", "{58A949C2-DDAE-4AFD-846D-AA3F41E17A31}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{2920E804-EB53-4067-9C9A-AAED8F96100C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2920E804-EB53-4067-9C9A-AAED8F96100C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2920E804-EB53-4067-9C9A-AAED8F96100C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58A949C2-DDAE-4AFD-846D-AA3F41E17A31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58A949C2-DDAE-4AFD-846D-AA3F41E17A31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58A949C2-DDAE-4AFD-846D-AA3F41E17A31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58A949C2-DDAE-4AFD-846D-AA3F41E17A31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +65,7 @@ Global
 		{A018428C-9E21-4FF7-9236-82F63A4B96FE} = {0A829219-6AE7-4706-9102-9E53A6300D31}
 		{B3128657-3E2B-4CC6-930C-DCFF1F36133C} = {633D5224-4C98-481E-9658-3A8AC9B7667F}
 		{2920E804-EB53-4067-9C9A-AAED8F96100C} = {4CEC9057-9780-4EAC-9365-CF40DA1C0786}
+		{58A949C2-DDAE-4AFD-846D-AA3F41E17A31} = {633D5224-4C98-481E-9658-3A8AC9B7667F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B122C047-81D2-4126-9526-0527BA8EE649}

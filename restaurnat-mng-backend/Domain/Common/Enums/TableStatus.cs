@@ -2,8 +2,8 @@
 {
     public enum TableStatus
     {
-        Disponible,
-        Ocupada,
-        Mantenimiento
+        Available = 1,
+        Occupied,
+        Maintenance
     }
 }
