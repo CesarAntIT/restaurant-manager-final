@@ -1,14 +1,13 @@
 ﻿using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Application.Dtos.User
 {
-    /// <summary>
-    /// Parameters required to request a password reset token
-    /// </summary>
     public class ForgotPasswordApiRequestDto
     {
-        /// <example>juanp</example>
-        [SwaggerParameter(Description = "The username of the account requesting password reset")]
-        public required string UserName { get; set; }
+        [Required(ErrorMessage = "El campo Email es requerido.")]
+        [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
+        [SwaggerParameter(Description = "El correo electrónico de la cuenta que solicita restablecer la contraseña.")]
+        public required string Email { get; set; }
     }
 }

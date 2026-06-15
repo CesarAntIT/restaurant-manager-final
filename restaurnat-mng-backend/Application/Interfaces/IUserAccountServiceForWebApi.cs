@@ -4,6 +4,6 @@ namespace Application.Interfaces
 {
     public interface IUserAccountServiceForWebApi : IBaseUserAccountService
     {
-        Task<LoginResponseForApiDto> AuthenticateAsync(LoginDto loginDto);
+        Task<LoginResponseForApiDto?> AuthenticateAsync(LoginDto loginDto);
     }
 }

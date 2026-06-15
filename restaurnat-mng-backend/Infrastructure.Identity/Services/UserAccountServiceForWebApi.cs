@@ -24,55 +24,56 @@ namespace Infrastructure.Identity.Services
             this.signInManager = signInManager;
             this.jwtSettings = jwtSettings.Value;
         }
-        public async Task<LoginResponseForApiDto> AuthenticateAsync(LoginDto loginDto)
+        public async Task<LoginResponseForApiDto?> AuthenticateAsync(LoginDto loginDto)
         {
-            LoginResponseForApiDto response = new()
-            {
-                Name = "",
-                HasError = false,
-                Errors = []
-            };
 
-            var user = await userManager.FindByNameAsync(loginDto.UserName);
+            var user = await userManager.FindByEmailAsync(loginDto.Email);
 
-            if (user == null)
-            {
-                response.HasError = true;
-                response.Errors.Add($"There is no acccount registered with this username: {loginDto.UserName}");
-                return response;
-            }
+
+            if (user == null) return null;
+
 
             if (!user.EmailConfirmed)
             {
-                response.HasError = true;
-                response.Errors.Add($"This account {loginDto.UserName} is not active, you should check your email");
-                return response;
+
+                throw new InvalidOperationException("ACCOUNT_NOT_CONFIRMED");
             }
+
 
             var result = await signInManager.PasswordSignInAsync(user.UserName ?? "", loginDto.Password, false, true);
 
             if (!result.Succeeded)
             {
-                response.HasError = true;
                 if (result.IsLockedOut)
                 {
-                    response.Errors.Add($"Your account {loginDto.UserName} has been locked due to multiple failed attempts." +
-                        $" Please try again in 10 minutes. If you don’t remember your password, you can go through the password " +
-                        $"reset process.");
+                    throw new InvalidOperationException("ACCOUNT_LOCKED");
                 }
-                else
-                {
-                    response.Errors.Add($"these credentials are invalid for this user: {user.UserName}");
-                }
-                return response;
+
+                return null; 
             }
 
+        
+            var roles = await userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "Cliente"; 
+
+         
             JwtSecurityToken jwtSecurityToken = await GenerateJwtToken(user);
+            string tokenString = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 
-            response.Name = user.Name;
-            response.AccessToken = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-
-            return response;
+           
+            return new LoginResponseForApiDto
+            {
+                AccessToken = tokenString,
+                TokenType = "Bearer",
+                ExpiresIn = 3600, // 1 hora
+                User = new UserSessionDto
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    Email = user.Email ?? string.Empty,
+                    Role = userRole
+                }
+            };
         }
 
 

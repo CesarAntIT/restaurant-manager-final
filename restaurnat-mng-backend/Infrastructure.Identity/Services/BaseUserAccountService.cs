@@ -1,6 +1,7 @@
 ﻿using Application.Dtos.Email;
 using Application.Dtos.User;
 using Application.Interfaces;
+using Domain.Common.Enums;
 using Infrastructure.Identity.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
@@ -20,139 +21,109 @@ namespace Infrastructure.Identity.Services
         }
 
 
-        //public virtual async Task<RegisterResponseDto> RegisterUserAsync(SaveUserDto dto, string? origin, bool? isApi = false)
-        //{
-        //    RegisterResponseDto response = new()
-        //    {
-        //        Email = "",
-        //        Id = "",
-        //        LastName = "",
-        //        Name = "",
-        //        UserName = "",
-        //        HasError = false,
-        //        Errors = new List<string>(),
-        //        Roles = new List<string>()
-        //    };
+        public virtual async Task<RegisterResponseDto> RegisterUser(SaveUserDto dto, string? origin, bool? isApi = false)
+        {
+            // 1. Mapear el rol del PDF/DTO (Español) al rol real de tu Enum/Identity (Inglés)
+            string identityRole = dto.Role switch
+            {
+                "Cliente" => UserRole.Client.ToString(),
+                "Dueño" => UserRole.Owner.ToString(),
+                "Admin" => UserRole.Admin.ToString(),
+                _ => throw new InvalidOperationException("IDENTITY_ERROR: El rol especificado no está soportado por el sistema.")
+            };
 
-        //    try
-        //    {
-        //        // 1. Inicializar usuario
-        //        var user = new UserAccount
-        //        {
-        //            Name = dto.Name,
-        //            LastName = dto.LastName,
-        //            DocumentNumber = dto.DocumentNumber,
-        //            UserName = dto.UserName,
-        //            Email = dto.Email,
-        //            PhoneNumberConfirmed = false,
-        //            TwoFactorEnabled = false,
-        //            LockoutEnabled = true,
-        //            IsActive = false, // Se crea inactivo hasta que confirme
-        //            CommerceId = dto.CommerceId,
-        //        };
+            // 2. Inicializar usuario usando el Email como UserName interno
+            var user = new UserAccount
+            {
+                Name = dto.Name,
+                UserName = dto.Email,
+                Email = dto.Email,
+                EmailConfirmed = dto.Role != "Cliente" // Se confirma automático si no es Cliente
+            };
 
-        //        // Configuración de EmailConfirmed según el rol
-        //        if (dto.Role == Roles.Admin.ToString() || dto.Role == Roles.Cashier.ToString())
-        //        {
-        //            user.EmailConfirmed = true;
-        //        }
-        //        else if (dto.Role == Roles.Customer.ToString())
-        //        {
-        //            user.EmailConfirmed = false;
-        //        }
+            // 3. Crear usuario en Identity
+            var result = await userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+            {
+                var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"IDENTITY_ERROR: {errorMessages}");
+            }
 
-        //        // 2. Crear usuario en Identity
-        //        var result = await userManager.CreateAsync(user, dto.Password);
-        //        if (!result.Succeeded)
-        //        {
-        //            response.HasError = true;
-        //            response.Errors.AddRange(result.Errors.Select(e => e.Description));
-        //            return response;
-        //        }
+            // 4. Asignar el Rol mapeado en inglés (El que Identity sí conoce)
+            var roleResult = await userManager.AddToRoleAsync(user, identityRole);
+            if (!roleResult.Succeeded)
+            {
+                var errorMessages = string.Join(", ", roleResult.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"ROLE_ERROR: {errorMessages}");
+            }
 
-        //        // 3. Asignar rol
-        //        var roleResult = await userManager.AddToRoleAsync(user, dto.Role);
-        //        if (!roleResult.Succeeded)
-        //        {
-        //            response.HasError = true;
-        //            response.Errors.AddRange(roleResult.Errors.Select(e => e.Description));
-        //            return response;
-        //        }
+            // 5. Envío de token de confirmación (Solo para Clientes)
+            if (dto.Role == "Cliente")
+            {
+                var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        //        // 4. Lógica de Notificación (Solo para Clientes)
-        //        if (dto.Role == Roles.Customer.ToString() || dto.Role == Roles.Commerce.ToString())
-        //        {
-        //            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                var subject = "Tu código de activación - TableUp";
+                var body = $@"     <h3>Bienvenido a TableUp</h3>     <p>Hola {user.Name},</p>     <p>Para activar tu cuenta en la aplicación de restaurantes, utiliza el siguiente código de confirmación:</p>     <h2 style='color: #2c3e50;'>{token}</h2>";
 
-        //            if (isApi == true)
-        //            {
-        //                // LÓGICA API: Enviar token en texto plano
-        //                var subject = "Tu código de activación - Artemis Banking";
-        //                var body = $@"
-        //            <h3>Bienvenido a Artemis Banking</h3>
-        //            <p>Hola {user.Name},</p>
-        //            <p>Para activar tu cuenta en la aplicación, utiliza el siguiente código de confirmación:</p>
-        //            <h2 style='color: #2c3e50;'>{token}</h2>
-        //            <p>Introduce este código en la sección de activación de la API/App.</p>";
+                await emailService.SendAsync(new EmailRequestDto
+                {
+                    To = user.Email,
+                    Subject = subject,
+                    HtmlBody = body
+                });
+            }
 
-        //                await emailService.SendAsync(new EmailRequestDto
-        //                {
-        //                    To = user.Email,
-        //                    Subject = subject,
-        //                    HtmlBody = body
-        //                });
-        //            }
-        //            else
-        //            {
-        //                // LÓGICA WEB APP: Validar origin y enviar enlace
-        //                if (!Uri.TryCreate(origin, UriKind.Absolute, out var baseUri))
-        //                {
-        //                    // Nota: Si llegamos aquí, el usuario ya se creó. 
-        //                    // Podrías considerar borrarlo o simplemente informar el error de correo.
-        //                    response.HasError = true;
-        //                    response.Errors.Add("El parámetro 'origin' no es una URI válida para el envío del correo.");
-        //                    return response;
-        //                }
+            // 6. Mapear respuesta exacta del PDF (Devolvemos el rol en español como lo pide el PDF)
+            return new RegisterResponseDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email ?? string.Empty,
+                Role = dto.Role,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
 
-        //                var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        //                var confirmUrl = new Uri(baseUri, "Login/ConfirmEmail");
-        //                var verificationUri = QueryHelpers.AddQueryString(confirmUrl.ToString(), "userId", user.Id);
-        //                verificationUri = QueryHelpers.AddQueryString(verificationUri, "token", encodedToken);
+        public virtual async Task<UpdateProfileResponseDto?> UpdateUserProfileAsync(string userId, UpdateProfileRequestDto request)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null) return null;
 
-        //                var subject = "Confirma tu cuenta";
-        //                var body = $@"
-        //            <p>Hola {user.Name},</p>
-        //            <p>Por favor confirma tu cuenta haciendo clic en el siguiente enlace:</p>
-        //            <a href='{verificationUri}'>Confirmar cuenta</a>";
+            user.Name = request.Name;
 
-        //                await emailService.SendAsync(new EmailRequestDto
-        //                {
-        //                    To = user.Email,
-        //                    Subject = subject,
-        //                    HtmlBody = body
-        //                });
-        //            }
-        //        }
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var resultChange = await userManager.ResetPasswordAsync(user, token, request.Password);
 
-        //        // 5. Mapear respuesta exitosa
-        //        response.HasError = false;
-        //        response.Id = user.Id;
-        //        response.Email = user.Email;
-        //        response.UserName = user.UserName;
-        //        response.Name = user.Name;
-        //        response.LastName = user.LastName;
-        //        response.Roles.Add(dto.Role);
+            if (!resultChange.Succeeded)
+            {
+                return null;
+            }
 
-        //        return response;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.HasError = true;
-        //        response.Errors.Add("Error interno: " + ex.Message);
-        //        return response;
-        //    }
-        //}
+            var resultUpdate = await userManager.UpdateAsync(user);
+            if (!resultUpdate.Succeeded)
+            {
+                return null;
+            }
 
+            var roles = await userManager.GetRolesAsync(user);
+            string primaryRole = roles.FirstOrDefault() ?? "Client";
+            string displayRole = primaryRole switch
+            {
+                "Client" => "Cliente",
+                "Owner" => "Dueño",
+                "Admin" => "Admin",
+                _ => "Cliente"
+            };
+
+            return new UpdateProfileResponseDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email ?? string.Empty,
+                Role = displayRole,
+                Updated = true
+            };
+        }
 
         //public virtual async Task<EditResponseDto> EditUser(SaveUserDto saveDto, string? origin, bool? isCreated = false, bool? isApi = false)
         //{
@@ -255,57 +226,89 @@ namespace Infrastructure.Identity.Services
         public virtual async Task<UserResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request)
         {
             UserResponseDto response = new() { HasError = false, Errors = [] };
-
-            var user = await userManager.FindByNameAsync(request.UserName);
+      var user = await userManager.FindByEmailAsync(request.UserName);
 
             if (user == null)
             {
-                response.HasError = true;
-                response.Errors.Add($"no hay cuenta registrada con este usuario{request.UserName}");
-                return response;
+                return response; 
             }
 
-            var resetUri = await GetResetPasswordUri(user, request.Origin);
-            user.EmailConfirmed = false;
+            
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+      
+            var secureToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            await userManager.UpdateAsync(user);
 
             await emailService.SendAsync(new EmailRequestDto()
             {
-                To = user.Email,
-                HtmlBody = $"por favor resetea tu password account visitando este URL <a href='{resetUri}'> Clic aqui </a>",
-                Subject = "Reset password"
+                To = user.Email ?? string.Empty,
+                Subject = "Recuperación de Contraseña - TableUp",
+                HtmlBody = $"<p>Hola {user.Name},</p><p>Tu token para restablecer la contraseña es:</p><b>{secureToken}</b>"
             });
 
             return response;
         }
-
         public virtual async Task<UserResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request)
         {
             UserResponseDto response = new() { HasError = false, Errors = [] };
 
-            var user = await userManager.FindByIdAsync(request.Id);
-
+            var user = await userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
                 response.HasError = true;
-                response.Errors.Add($"no hay cuenta registrada con este usuario");
+                response.Errors.Add("No existe una cuenta registrada con este correo electronico.");
                 return response;
             }
 
-            var token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
-            var result = await userManager.ResetPasswordAsync(user, token, request.Password);
-            if (!result.Succeeded)
+            try
+            {
+                var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+                var result = await userManager.ResetPasswordAsync(user, decodedToken, request.Password);
+
+                if (!result.Succeeded)
+                {
+                    response.HasError = true;
+                    response.Errors.AddRange(result.Errors.Select(s => s.Description));
+                    return response;
+                }
+
+                user.EmailConfirmed = true;
+                await userManager.UpdateAsync(user);
+            }
+            catch (Exception)
             {
                 response.HasError = true;
-                response.Errors.AddRange(result.Errors.Select(s => s.Description).ToList());
-                return response;
+                response.Errors.Add("El token de restablecimiento es invalido o tiene un formato incorrecto.");
             }
 
-            user.EmailConfirmed = true;
-            await userManager.UpdateAsync(user);
-
             return response;
+        }
+
+        public virtual async Task<UserProfileResponseDto?> GetUserProfileByIdAsync(string userId)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null) return null;
+
+            var roles = await userManager.GetRolesAsync(user);
+            var primaryRole = roles.FirstOrDefault() ?? "Client";
+
+            // Mapeamos el rol interno de ingles al espanol requerido por el PDF
+            string displayRole = primaryRole switch
+            {
+                "Client" => "Cliente",
+                "Owner" => "Dueño",
+                "Admin" => "Admin",
+                _ => "Cliente"
+            };
+
+            return new UserProfileResponseDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email ?? string.Empty,
+                Role = displayRole,
+                CreatedAt = user.CreatedAt
+            };
         }
 
         public virtual async Task<List<UserDto>> GetAllUser(bool? isActive = true)
