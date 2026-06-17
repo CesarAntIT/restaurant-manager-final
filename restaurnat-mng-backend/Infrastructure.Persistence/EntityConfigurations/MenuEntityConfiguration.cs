@@ -12,7 +12,6 @@ namespace Infrastructure.Persistence.EntityConfigurations
             builder.HasKey(m => m.Id);
 
             builder.Property(m => m.Name).HasMaxLength(150).IsRequired();
-            builder.Property(m => m.Price).HasColumnType("decimal(10,2)").IsRequired();
         }
     }
 }

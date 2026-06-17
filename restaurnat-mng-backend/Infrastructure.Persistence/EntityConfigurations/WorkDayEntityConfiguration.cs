@@ -19,8 +19,8 @@ namespace Infrastructure.Persistence.EntityConfigurations
                 .HasMaxLength(30)
                 .IsRequired();
 
-            builder.HasOne<Restaurant>()
-                   .WithMany()
+            builder.HasOne(w=> w.Restaurant)
+                   .WithMany(rest => rest.WorkDays)
                    .HasForeignKey(w => w.RestaurantId)
                    .OnDelete(DeleteBehavior.Cascade);
 

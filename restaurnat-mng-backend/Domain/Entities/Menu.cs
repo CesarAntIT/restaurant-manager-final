@@ -8,10 +8,11 @@ namespace Domain.Entities
         public required int RestaurantId { get; set; } //fk
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public required decimal Price { get; set; }
         public MenuStatus Status { get; set; }
 
-         //nav property
-        public ICollection<DishIngredient> DishIngredients { get; set; } = new List<DishIngredient>();
+        //nav property
+        public ICollection<MenuDish> MenuDishes { get; set; } = new List<MenuDish>();
+
+        public Restaurant? Restaurant { get; set; }
     }
 }

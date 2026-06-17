@@ -14,9 +14,9 @@ namespace Infrastructure.Persistence.EntityConfigurations
             builder.Property(wi => wi.QuantitySold).IsRequired();
             builder.Property(wi => wi.PriceUnit).HasColumnType("decimal(10,2)").IsRequired();
 
-            builder.HasOne<Menu>()
+            builder.HasOne<Dish>()
                    .WithMany()
-                   .HasForeignKey(wi => wi.MenuId)
+                   .HasForeignKey(wi => wi.DishId)
                    .OnDelete(DeleteBehavior.Cascade);
         }
     }

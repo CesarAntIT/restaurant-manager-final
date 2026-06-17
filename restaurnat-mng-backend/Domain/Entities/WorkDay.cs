@@ -12,5 +12,7 @@ namespace Domain.Entities
 
         // nav property
         public ICollection<WorkDayItem> WorkDayItems { get; set; } = new List<WorkDayItem>();
+
+        public Restaurant? Restaurant { get; set; }
     }
 }

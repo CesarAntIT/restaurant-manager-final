@@ -15,6 +15,12 @@ namespace Domain.Entities
 
         public ICollection<Table> Tables { get; set; } = new List<Table>();
         public ICollection<Menu> Menus { get; set; } = new List<Menu>();
+
+        public ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
+
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        public ICollection<WorkDay> WorkDays { get; set; } = new List<WorkDay>();
     }
 
 }

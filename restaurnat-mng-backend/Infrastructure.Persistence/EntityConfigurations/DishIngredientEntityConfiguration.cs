@@ -11,17 +11,17 @@ namespace Infrastructure.Persistence.EntityConfigurations
             builder.ToTable("DishIngredients");
 
             // Llave primaria compuesta
-            builder.HasKey(di => new { di.MenuId, di.IngredientId });
+            builder.HasKey(di => new { di.DishId, di.IngredientId });
 
             builder.Property(di => di.QuantityNeeded).HasColumnType("numeric(10,2)").IsRequired();
 
-            builder.HasOne(di => di.Menu)
-                   .WithMany()
-                   .HasForeignKey(di => di.MenuId)
+            builder.HasOne(di => di.Dish)
+                   .WithMany(d => d.DishIngredients)
+                   .HasForeignKey(di => di.DishId)
                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(di => di.Ingredient)
-                   .WithMany()
+                   .WithMany(d => d.DishIngredients)
                    .HasForeignKey(di => di.IngredientId)
                    .OnDelete(DeleteBehavior.Cascade);
         }

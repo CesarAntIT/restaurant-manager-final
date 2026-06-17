@@ -10,6 +10,8 @@ namespace Infrastructure.Persistence.EntityConfigurations
         {
             builder.ToTable("Ingredients");
             builder.HasKey(i => i.Id);
+            builder.HasIndex(i => i.Name);
+            builder.HasIndex(i => new { i.RestaurantId, i.Name }).IsUnique();
 
             builder.Property(i => i.Name).HasMaxLength(120).IsRequired();
             builder.Property(i => i.InitialQuantity).HasColumnType("numeric(10,2)").IsRequired();

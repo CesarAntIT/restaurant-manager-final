@@ -15,13 +15,8 @@ namespace Infrastructure.Persistence.EntityConfigurations
             builder.Property(r => r.Rating).IsRequired();
             builder.Property(r => r.Comment).HasMaxLength(1000);
 
-            builder.Property(r => r.Status)
-                .HasConversion<string>()
-                .HasMaxLength(30)
-                .IsRequired();
-
             builder.HasOne<Restaurant>()
-                   .WithMany()
+                   .WithMany(rest => rest.Reviews)
                    .HasForeignKey(r => r.RestaurantId)
                    .OnDelete(DeleteBehavior.Cascade);
         }

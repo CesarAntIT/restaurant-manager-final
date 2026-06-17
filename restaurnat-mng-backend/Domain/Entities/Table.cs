@@ -9,5 +9,7 @@ namespace Domain.Entities
         public required string NumberMesa { get; set; }
         public required int Seats { get; set; }
         public TableStatus Status { get; set; } 
+
+        public Restaurant? Restaurant { get; set; }
     }
 }

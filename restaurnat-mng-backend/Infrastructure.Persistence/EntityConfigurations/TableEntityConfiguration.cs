@@ -14,6 +14,11 @@ namespace Infrastructure.Persistence.EntityConfigurations
 
             builder.Property(t => t.NumberMesa).HasMaxLength(50).IsRequired();
             builder.Property(t => t.Seats).IsRequired();
+
+            builder.HasOne<Restaurant>()
+                   .WithMany(rest => rest.Tables)
+                   .HasForeignKey(r => r.RestaurantId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -9,7 +9,6 @@ namespace Domain.Entities
         public required int RestaurantId { get; set; } // FK
         public required int Rating { get; set; }
         public string? Comment { get; set; }
-        public ReviewStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // nav property
