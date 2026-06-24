@@ -11,6 +11,8 @@ namespace Infrastructure.Persistence.Contexts
         public DbSet<Restaurant> Restaurants { get; set; }
         public DbSet<Table> Tables { get; set; }
 
+        public DbSet<RestaurantImage> RestaurantImages { get; set; }
+
         public DbSet<MenuDish> MenuDishes { get; set; }
         public DbSet<Dish> Dishes { get; set; }
         public DbSet<Menu> Menus { get; set; }

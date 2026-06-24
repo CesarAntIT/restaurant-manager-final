@@ -21,6 +21,8 @@ namespace Domain.Entities
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
         public ICollection<WorkDay> WorkDays { get; set; } = new List<WorkDay>();
+
+        public ICollection<RestaurantImage> RestaurantImages { get; set; } = new List<RestaurantImage>();
     }
 
 }
