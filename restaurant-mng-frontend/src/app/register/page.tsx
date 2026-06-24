@@ -5,9 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
-type Role = "Cliente" | "Dueño" | "Admin";
+type Role = "Cliente" | "Dueño";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5155";
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+if (!API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL no está configurada");
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -51,6 +55,8 @@ export default function RegisterPage() {
     if (!acceptedTerms) return setError("Debes aceptar los términos para continuar.");
 
     setIsLoading(true);
+
+    
 
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -147,7 +153,7 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <label className="block font-mono text-xs font-bold uppercase text-amber-400">Selecciona tu rol</label>
               <div className="grid grid-cols-3 gap-2">
-                {(["Cliente", "Dueño", "Admin"] as Role[]).map((item) => (
+                {(["Cliente", "Dueño"] as Role[]).map((item) => (
                   <button
                     key={item}
                     type="button"
