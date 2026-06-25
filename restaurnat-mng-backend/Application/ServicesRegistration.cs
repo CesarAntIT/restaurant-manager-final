@@ -1,7 +1,7 @@
-﻿using Application.Interfaces;
+﻿using System.Reflection;
+using Application.Interfaces;
 using Application.Services;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace Application
 {
@@ -14,6 +14,7 @@ namespace Application
             services.AddAutoMapper(cfg => { }, Assembly.GetExecutingAssembly());
 
             //services ioc
+            services.AddScoped<IRestaurantService, RestaurantService>();
 
         }
 
