@@ -5,6 +5,9 @@ namespace Application.Interfaces
     public interface IBaseUserAccountService
     {
         Task<UserResponseDto> ConfirmAccountAsync(string userId, string token);
+        Task<UserResponseDto> ConfirmAccountByEmailAsync(string email, string token);
+
+
         Task<UserResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request);
         Task<UserResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request);
         Task<List<UserDto>> GetAllUser(bool? isActive = true);

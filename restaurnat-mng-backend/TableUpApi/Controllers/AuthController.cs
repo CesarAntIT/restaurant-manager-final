@@ -1,5 +1,6 @@
 using Application.Dtos.User;
 using Application.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Win32;
 using Org.BouncyCastle.Pqc.Crypto.Lms;
@@ -191,6 +192,55 @@ namespace TableUpApi.Controllers
                     success = true,
                     message = "Si la cuenta existe, se generara un proceso de recuperacion de contrasena.",
                     data = new { processed = true }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado al procesar la solicitud.", traceId = traceId }
+                });
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(Summary = "Confirmar Cuenta de Cliente", Description = "Permite activar la cuenta de un cliente utilizando el token enviado a su correo electronico.")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmAccountRequestDto dto)
+        {
+            var traceId = $"00-confirm-email-{Guid.NewGuid()}";
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = new { code = "VALIDATION_ERROR", message = "La solicitud contiene datos invalidos.", traceId = traceId }
+                });
+            }
+
+            try
+            {
+      
+                var result = await userAccountService.ConfirmAccountByEmailAsync(dto.Email, dto.Token);
+
+                if (result.HasError)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        error = new { code = "VALIDATION_ERROR", message = result.Message ?? "Error al confirmar la cuenta.", traceId = traceId }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cuenta activada correctamente. Ya puedes iniciar sesion.",
+                    data = new { confirmed = true }
                 });
             }
             catch (Exception)
