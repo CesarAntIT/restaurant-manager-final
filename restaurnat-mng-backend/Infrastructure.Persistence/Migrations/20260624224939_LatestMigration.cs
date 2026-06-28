@@ -7,11 +7,27 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class SetUpEntities : Migration
+    public partial class LatestMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Dishes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RestaurantId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Price = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Dishes", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Restaurants",
                 columns: table => new
@@ -65,7 +81,6 @@ namespace Infrastructure.Persistence.Migrations
                     RestaurantId = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
-                    Price = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -73,6 +88,26 @@ namespace Infrastructure.Persistence.Migrations
                     table.PrimaryKey("PK_Menus", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Menus_Restaurants_RestaurantId",
+                        column: x => x.RestaurantId,
+                        principalTable: "Restaurants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RestaurantImages",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RestaurantId = table.Column<int>(type: "integer", nullable: false),
+                    Url = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RestaurantImages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RestaurantImages_Restaurants_RestaurantId",
                         column: x => x.RestaurantId,
                         principalTable: "Restaurants",
                         principalColumn: "Id",
@@ -89,7 +124,6 @@ namespace Infrastructure.Persistence.Migrations
                     RestaurantId = table.Column<int>(type: "integer", nullable: false),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     RestaurantId1 = table.Column<int>(type: "integer", nullable: true)
                 },
@@ -118,7 +152,8 @@ namespace Infrastructure.Persistence.Migrations
                     RestaurantId = table.Column<int>(type: "integer", nullable: false),
                     NumberMesa = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Seats = table.Column<int>(type: "integer", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false)
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    RestaurantId1 = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -129,6 +164,11 @@ namespace Infrastructure.Persistence.Migrations
                         principalTable: "Restaurants",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Tables_Restaurants_RestaurantId1",
+                        column: x => x.RestaurantId1,
+                        principalTable: "Restaurants",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -157,31 +197,49 @@ namespace Infrastructure.Persistence.Migrations
                 name: "DishIngredients",
                 columns: table => new
                 {
-                    MenuId = table.Column<int>(type: "integer", nullable: false),
+                    DishId = table.Column<int>(type: "integer", nullable: false),
                     IngredientId = table.Column<int>(type: "integer", nullable: false),
-                    QuantityNeeded = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
-                    MenuId1 = table.Column<int>(type: "integer", nullable: true)
+                    QuantityNeeded = table.Column<decimal>(type: "numeric(10,2)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DishIngredients", x => new { x.MenuId, x.IngredientId });
+                    table.PrimaryKey("PK_DishIngredients", x => new { x.DishId, x.IngredientId });
+                    table.ForeignKey(
+                        name: "FK_DishIngredients_Dishes_DishId",
+                        column: x => x.DishId,
+                        principalTable: "Dishes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DishIngredients_Ingredients_IngredientId",
                         column: x => x.IngredientId,
                         principalTable: "Ingredients",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MenuDishes",
+                columns: table => new
+                {
+                    MenuId = table.Column<int>(type: "integer", nullable: false),
+                    DishId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MenuDishes", x => new { x.DishId, x.MenuId });
                     table.ForeignKey(
-                        name: "FK_DishIngredients_Menus_MenuId",
+                        name: "FK_MenuDishes_Dishes_DishId",
+                        column: x => x.DishId,
+                        principalTable: "Dishes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MenuDishes_Menus_MenuId",
                         column: x => x.MenuId,
                         principalTable: "Menus",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DishIngredients_Menus_MenuId1",
-                        column: x => x.MenuId1,
-                        principalTable: "Menus",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -251,26 +309,49 @@ namespace Infrastructure.Persistence.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     WorkDayId = table.Column<int>(type: "integer", nullable: false),
-                    MenuId = table.Column<int>(type: "integer", nullable: false),
+                    DishId = table.Column<int>(type: "integer", nullable: false),
                     QuantitySold = table.Column<int>(type: "integer", nullable: false),
-                    PriceUnit = table.Column<decimal>(type: "numeric(10,2)", nullable: false)
+                    PriceUnit = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    WorkDayId1 = table.Column<int>(type: "integer", nullable: true),
+                    DishId1 = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_WorkDayItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WorkDayItems_Menus_MenuId",
-                        column: x => x.MenuId,
-                        principalTable: "Menus",
+                        name: "FK_WorkDayItems_Dishes_DishId",
+                        column: x => x.DishId,
+                        principalTable: "Dishes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WorkDayItems_Dishes_DishId1",
+                        column: x => x.DishId1,
+                        principalTable: "Dishes",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WorkDayItems_WorkDays_WorkDayId",
                         column: x => x.WorkDayId,
                         principalTable: "WorkDays",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WorkDayItems_WorkDays_WorkDayId1",
+                        column: x => x.WorkDayId1,
+                        principalTable: "WorkDays",
+                        principalColumn: "Id");
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dishes_Name",
+                table: "Dishes",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dishes_RestaurantId_Name",
+                table: "Dishes",
+                columns: new[] { "RestaurantId", "Name" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DishIngredients_IngredientId",
@@ -278,14 +359,20 @@ namespace Infrastructure.Persistence.Migrations
                 column: "IngredientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DishIngredients_MenuId1",
-                table: "DishIngredients",
-                column: "MenuId1");
+                name: "IX_Ingredients_Name",
+                table: "Ingredients",
+                column: "Name");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ingredients_RestaurantId",
+                name: "IX_Ingredients_RestaurantId_Name",
                 table: "Ingredients",
-                column: "RestaurantId");
+                columns: new[] { "RestaurantId", "Name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MenuDishes_MenuId",
+                table: "MenuDishes",
+                column: "MenuId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Menus_RestaurantId",
@@ -313,6 +400,26 @@ namespace Infrastructure.Persistence.Migrations
                 column: "TableId1");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RestaurantImages_RestaurantId",
+                table: "RestaurantImages",
+                column: "RestaurantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Restaurants_Category",
+                table: "Restaurants",
+                column: "Category");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Restaurants_Name",
+                table: "Restaurants",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Restaurants_OwnerId",
+                table: "Restaurants",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Reviews_RestaurantId",
                 table: "Reviews",
                 column: "RestaurantId");
@@ -328,14 +435,29 @@ namespace Infrastructure.Persistence.Migrations
                 column: "RestaurantId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WorkDayItems_MenuId",
+                name: "IX_Tables_RestaurantId1",
+                table: "Tables",
+                column: "RestaurantId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkDayItems_DishId",
                 table: "WorkDayItems",
-                column: "MenuId");
+                column: "DishId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkDayItems_DishId1",
+                table: "WorkDayItems",
+                column: "DishId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkDayItems_WorkDayId",
                 table: "WorkDayItems",
                 column: "WorkDayId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkDayItems_WorkDayId1",
+                table: "WorkDayItems",
+                column: "WorkDayId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkDays_RestaurantId",
@@ -350,10 +472,16 @@ namespace Infrastructure.Persistence.Migrations
                 name: "DishIngredients");
 
             migrationBuilder.DropTable(
+                name: "MenuDishes");
+
+            migrationBuilder.DropTable(
                 name: "PredictionsIA");
 
             migrationBuilder.DropTable(
                 name: "Reservations");
+
+            migrationBuilder.DropTable(
+                name: "RestaurantImages");
 
             migrationBuilder.DropTable(
                 name: "Reviews");
@@ -365,10 +493,13 @@ namespace Infrastructure.Persistence.Migrations
                 name: "Ingredients");
 
             migrationBuilder.DropTable(
+                name: "Menus");
+
+            migrationBuilder.DropTable(
                 name: "Tables");
 
             migrationBuilder.DropTable(
-                name: "Menus");
+                name: "Dishes");
 
             migrationBuilder.DropTable(
                 name: "WorkDays");

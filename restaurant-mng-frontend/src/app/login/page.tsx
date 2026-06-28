@@ -94,6 +94,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#4a7934]/50 via-[#1c1107]/40 to-[#562e1f]/70" />
         <div className="relative z-10 flex flex-col justify-between w-full p-12">
           <div className="flex items-center gap-3">
+            <Image src="/Logo.png" alt="TableUp Logo" width={36} height={36} className="rounded-lg object-contain" />
             <span className="font-serif italic text-xl font-bold text-[#d4ceb6] tracking-wide">TableUp</span>
           </div>
           <div>
