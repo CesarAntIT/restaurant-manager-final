@@ -5,9 +5,8 @@ namespace Application.Dtos.User
 {
     public class ForgotPasswordApiRequestDto
     {
-        [Required(ErrorMessage = "El campo Email es requerido.")]
-        [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
-        [SwaggerParameter(Description = "El correo electrónico de la cuenta que solicita restablecer la contraseña.")]
-        public required string Email { get; set; }
+        [Required(ErrorMessage = "El campo correo electrónico o nombre de usuario es requerido.")]
+        [SwaggerParameter(Description = "El correo electrónico o el nombre de usuario de la cuenta que solicita restablecer la contraseña.")]
+        public required string Identifier { get; set; }
     }
 }
