@@ -29,16 +29,20 @@ namespace Infrastructure.Persistence.EntityConfigurations
 
             builder.HasMany(r => r.Ingredients)
                    .WithOne(i => i.Restaurant)
-                   .HasForeignKey(m => m.RestaurantId);
+                   .HasForeignKey(i => i.RestaurantId);
 
             builder.HasMany(r => r.Reviews)
-                   .WithOne(r => r.Restaurant)
-                   .HasForeignKey(m => m.RestaurantId);
+                   .WithOne(re => re.Restaurant)
+                   .HasForeignKey(re => re.RestaurantId);
 
 
             builder.HasMany(r => r.WorkDays)
                    .WithOne(w => w.Restaurant)
-                   .HasForeignKey(m => m.RestaurantId);
+                   .HasForeignKey(w => w.RestaurantId);
+
+            builder.HasMany(r => r.RestaurantImages)
+                    .WithOne(ri => ri.Restaurant)
+                    .HasForeignKey(ri => ri.RestaurantId);
         }
     }
 }

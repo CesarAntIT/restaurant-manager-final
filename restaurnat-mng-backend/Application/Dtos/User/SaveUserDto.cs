@@ -8,6 +8,10 @@ namespace Application.Dtos.User
         [StringLength(120, ErrorMessage = "El nombre no puede exceder los 120 caracteres.")]
         public required string Name { get; set; }
 
+        [Required(ErrorMessage = "El campo Username es requerido.")]
+        [StringLength(50, ErrorMessage = "El nombre de usuario no puede exceder los 50 caracteres.")]
+        public required string Username { get; set; }
+
         [Required(ErrorMessage = "El campo Email es requerido.")]
         [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
         public required string Email { get; set; }
