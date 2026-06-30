@@ -1,5 +1,6 @@
 using Application.Dtos.User;
 using Application.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Win32;
 using Org.BouncyCastle.Pqc.Crypto.Lms;
@@ -121,21 +122,35 @@ namespace TableUpApi.Controllers
         [SwaggerOperation(Summary = "Registro de Usuario", Description = "Permite registrar usuarios en la plataforma utilizando Microsoft Identity.")]
         public async Task<IActionResult> Register([FromBody] SaveUserDto dto)
         {
+            var traceId = $"00-register-{Guid.NewGuid()}";
+
             if (!ModelState.IsValid)
-                return BadRequest();
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = new { code = "VALIDATION_ERROR", message = "La solicitud contiene datos invalidos.", traceId = traceId }
+                });
+            }
 
             try
             {
-
                 var result = await userAccountService.RegisterUser(dto, null, true);
 
-
-                return StatusCode(StatusCodes.Status201Created, result);
+                return StatusCode(StatusCodes.Status201Created, new
+                {
+                    success = true,
+                    message = "Usuario registrado correctamente.",
+                    data = result
+                });
             }
             catch (Exception ex)
             {
-
-                return BadRequest(ex.Message);
+                return BadRequest(new
+                {
+                    success = false,
+                    error = new { code = "VALIDATION_ERROR", message = ex.Message.Replace("IDENTITY_ERROR: ", ""), traceId = traceId }
+                });
             }
         }
 
@@ -143,7 +158,7 @@ namespace TableUpApi.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = "Recuperacion de Contrasena", Description = "Permite iniciar el proceso de recuperacion de contrasena.")]
+        [SwaggerOperation(Summary = "Recuperacion de Contrasena", Description = "Permite iniciar el proceso de recuperacion de contrasena usando Email o Username.")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordApiRequestDto dto)
         {
             var traceId = $"00-forgot-password-{Guid.NewGuid()}";
@@ -153,31 +168,22 @@ namespace TableUpApi.Controllers
                 return BadRequest(new
                 {
                     success = false,
-                    error = new
-                    {
-                        code = "VALIDATION_ERROR",
-                        message = "La solicitud contiene datos invalidos.",
-                        traceId = traceId
-                    }
+                    error = new { code = "VALIDATION_ERROR", message = "La solicitud contiene datos invalidos.", traceId = traceId }
                 });
             }
 
             try
             {
+                // Pasamos el Identifier en lugar del Email fijo
                 var result = await userAccountService.ForgotPasswordAsync(
-                    new ForgotPasswordRequestDto { UserName = dto.Email });
+                    new ForgotPasswordRequestDto { UserName = dto.Identifier });
 
                 if (result != null && result.HasError)
                 {
                     return BadRequest(new
                     {
                         success = false,
-                        error = new
-                        {
-                            code = "VALIDATION_ERROR",
-                            message = string.Join(" ", result.Errors),
-                            traceId = traceId
-                        }
+                        error = new { code = "VALIDATION_ERROR", message = string.Join(" ", result.Errors), traceId = traceId }
                     });
                 }
 
@@ -193,12 +199,56 @@ namespace TableUpApi.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     success = false,
-                    error = new
+                    error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado al procesar la solicitud.", traceId = traceId }
+                });
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(Summary = "Confirmar Cuenta de Cliente", Description = "Permite activar la cuenta de un cliente utilizando el token enviado a su correo electronico.")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmAccountRequestDto dto)
+        {
+            var traceId = $"00-confirm-email-{Guid.NewGuid()}";
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = new { code = "VALIDATION_ERROR", message = "La solicitud contiene datos invalidos.", traceId = traceId }
+                });
+            }
+
+            try
+            {
+      
+                var result = await userAccountService.ConfirmAccountByEmailAsync(dto.Email, dto.Token);
+
+                if (result.HasError)
+                {
+                    return BadRequest(new
                     {
-                        code = "INTERNAL_SERVER_ERROR",
-                        message = "Ocurrio un error inesperado al procesar la solicitud.",
-                        traceId = traceId
-                    }
+                        success = false,
+                        error = new { code = "VALIDATION_ERROR", message = result.Message ?? "Error al confirmar la cuenta.", traceId = traceId }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cuenta activada correctamente. Ya puedes iniciar sesion.",
+                    data = new { confirmed = true }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado al procesar la solicitud.", traceId = traceId }
                 });
             }
         }
@@ -330,13 +380,13 @@ namespace TableUpApi.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = "Actualizacion de perfil (Solo Nombre y Contraseña)", Description = "Permite al usuario autenticado actualizar obligatoriamente Name, Password y ConfirmPassword. Por auditoría, Email y Rol permanecen bloqueados; si se envían, la API rechaza la solicitud")]
+        [SwaggerOperation(Summary = "Actualizacion de perfil (Solo Nombre y Contraseña)", Description = "Permite al usuario actualizar Name y Password. Username, Email y Rol permanecen bloqueados por auditoria.")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto dto)
         {
             var traceId = $"00-update-profile-{Guid.NewGuid()}";
 
-            // Regla de auditoria: Bloquear si envian Email o Role en el JSON
-            if (!string.IsNullOrEmpty(dto.Email) || !string.IsNullOrEmpty(dto.Role) || !ModelState.IsValid)
+            // Regla de auditoria extendida: Bloquear si envian Username, Email o Role
+            if (!string.IsNullOrEmpty(dto.Username) || !string.IsNullOrEmpty(dto.Email) || !string.IsNullOrEmpty(dto.Role) || !ModelState.IsValid)
             {
                 return BadRequest(new
                 {

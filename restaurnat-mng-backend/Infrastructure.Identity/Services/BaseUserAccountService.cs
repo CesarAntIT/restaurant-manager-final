@@ -23,7 +23,7 @@ namespace Infrastructure.Identity.Services
 
         public virtual async Task<RegisterResponseDto> RegisterUser(SaveUserDto dto, string? origin, bool? isApi = false)
         {
-            // 1. Mapear el rol del PDF/DTO (Español) al rol real de tu Enum/Identity (Inglés)
+     
             string identityRole = dto.Role switch
             {
                 "Cliente" => UserRole.Client.ToString(),
@@ -32,16 +32,23 @@ namespace Infrastructure.Identity.Services
                 _ => throw new InvalidOperationException("IDENTITY_ERROR: El rol especificado no está soportado por el sistema.")
             };
 
-            // 2. Inicializar usuario usando el Email como UserName interno
+          
+            var userExists = await userManager.FindByNameAsync(dto.Username);
+            if (userExists != null)
+            {
+                throw new InvalidOperationException("IDENTITY_ERROR: El nombre de usuario ya está en uso.");
+            }
+
+            
             var user = new UserAccount
             {
                 Name = dto.Name,
-                UserName = dto.Email,
+                UserName = dto.Username,
                 Email = dto.Email,
-                EmailConfirmed = dto.Role != "Cliente" // Se confirma automático si no es Cliente
+                EmailConfirmed = dto.Role != "Cliente"
             };
 
-            // 3. Crear usuario en Identity
+           
             var result = await userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
             {
@@ -49,7 +56,7 @@ namespace Infrastructure.Identity.Services
                 throw new InvalidOperationException($"IDENTITY_ERROR: {errorMessages}");
             }
 
-            // 4. Asignar el Rol mapeado en inglés (El que Identity sí conoce)
+           
             var roleResult = await userManager.AddToRoleAsync(user, identityRole);
             if (!roleResult.Succeeded)
             {
@@ -57,13 +64,12 @@ namespace Infrastructure.Identity.Services
                 throw new InvalidOperationException($"ROLE_ERROR: {errorMessages}");
             }
 
-            // 5. Envío de token de confirmación (Solo para Clientes)
+            
             if (dto.Role == "Cliente")
             {
                 var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
                 var subject = "Tu código de activación - TableUp";
-                var body = $@"     <h3>Bienvenido a TableUp</h3>     <p>Hola {user.Name},</p>     <p>Para activar tu cuenta en la aplicación de restaurantes, utiliza el siguiente código de confirmación:</p>     <h2 style='color: #2c3e50;'>{token}</h2>";
+                var body = $@"<h3>Bienvenido a TableUp</h3><p>Hola {user.Name},</p><p>Para activar tu cuenta en la aplicación de restaurantes, utiliza el siguiente código de confirmación:</p><h2 style='color: #2c3e50;'>{token}</h2>";
 
                 await emailService.SendAsync(new EmailRequestDto
                 {
@@ -73,7 +79,7 @@ namespace Infrastructure.Identity.Services
                 });
             }
 
-            // 6. Mapear respuesta exacta del PDF (Devolvemos el rol en español como lo pide el PDF)
+         
             return new RegisterResponseDto
             {
                 Id = user.Id,
@@ -119,6 +125,7 @@ namespace Infrastructure.Identity.Services
             {
                 Id = user.Id,
                 Name = user.Name,
+                Username = user.UserName ?? string.Empty, // Se retorna el username actual intacto
                 Email = user.Email ?? string.Empty,
                 Role = displayRole,
                 Updated = true
@@ -223,21 +230,43 @@ namespace Infrastructure.Identity.Services
         //    }
         //}
 
+        public virtual async Task<UserResponseDto> ConfirmAccountByEmailAsync(string email, string token)
+        {
+            UserResponseDto response = new() { HasError = false, Errors = [] };
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                response.Message = "No existe ninguna cuenta registrada con este correo electrónico.";
+                response.HasError = true;
+                return response;
+            }
+
+            return await ConfirmAccountAsync(user.Id, token);
+        }
+
         public virtual async Task<UserResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request)
         {
             UserResponseDto response = new() { HasError = false, Errors = [] };
-      var user = await userManager.FindByEmailAsync(request.UserName);
+
+
+            var user = await userManager.FindByEmailAsync(request.UserName);
+
+      
+            if (user == null)
+            {
+                user = await userManager.FindByNameAsync(request.UserName);
+            }
+
 
             if (user == null)
             {
-                return response; 
+                return response;
             }
 
-            
+         
             var token = await userManager.GeneratePasswordResetTokenAsync(user);
-      
             var secureToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
 
             await emailService.SendAsync(new EmailRequestDto()
             {
@@ -248,6 +277,7 @@ namespace Infrastructure.Identity.Services
 
             return response;
         }
+
         public virtual async Task<UserResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request)
         {
             UserResponseDto response = new() { HasError = false, Errors = [] };
@@ -305,6 +335,7 @@ namespace Infrastructure.Identity.Services
             {
                 Id = user.Id,
                 Name = user.Name,
+                Username = user.UserName ?? string.Empty,
                 Email = user.Email ?? string.Empty,
                 Role = displayRole,
                 CreatedAt = user.CreatedAt

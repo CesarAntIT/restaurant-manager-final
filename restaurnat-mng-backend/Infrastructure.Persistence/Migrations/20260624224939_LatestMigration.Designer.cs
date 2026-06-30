@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TableUpContextDB))]
-    [Migration("20260617085043_IndexesAndRelations")]
-    partial class IndexesAndRelations
+    [Migration("20260624224939_LatestMigration")]
+    partial class LatestMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -289,6 +289,28 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Restaurants", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.RestaurantImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("RestaurantImages", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -519,6 +541,17 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Table");
                 });
 
+            modelBuilder.Entity("Domain.Entities.RestaurantImage", b =>
+                {
+                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
+                        .WithMany("RestaurantImages")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restaurant");
+                });
+
             modelBuilder.Entity("Domain.Entities.Review", b =>
                 {
                     b.HasOne("Domain.Entities.Restaurant", null)
@@ -609,6 +642,8 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Ingredients");
 
                     b.Navigation("Menus");
+
+                    b.Navigation("RestaurantImages");
 
                     b.Navigation("Reviews");
 
