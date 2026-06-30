@@ -75,7 +75,6 @@ namespace Application.Services
             existing.Category = dto.Category;
             existing.Address = dto.Address;
             existing.PhoneNumber = dto.PhoneNumber;
-            existing.Status = dto.Status;
 
             if (dto.Images.Any())
             {
