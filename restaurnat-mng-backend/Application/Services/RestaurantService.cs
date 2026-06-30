@@ -102,6 +102,19 @@ namespace Application.Services
             return MapToDto(updated);
         }
 
+        public async Task<bool> ChangeStatus(int id, RestaurantStatus status)
+        {
+            var exists = await restaurantRepository.GetByIdAsync(id);
+            if (exists == null) return false;
+
+            exists.Status = status;
+            var updated = await restaurantRepository.UpdateRestaurantAsync(id, exists);
+
+            if (updated == null) return false;
+            return true;
+
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             var existing = await restaurantRepository.GetByIdAsync(id);

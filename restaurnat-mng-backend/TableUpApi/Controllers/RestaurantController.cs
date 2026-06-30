@@ -1,9 +1,11 @@
 using Application.Dtos.Restaurant;
 using Application.Interfaces;
+using Domain.Common.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 
 namespace TableUpApi.Controllers
 {
@@ -171,6 +173,48 @@ namespace TableUpApi.Controllers
                     error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado.", traceId = traceId }
                 });
             }
+        }
+
+        [HttpPatch("change-status/{id}")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(Summary = 
+            "Actualizar Estado de Restaurante", Description = "Permite a un Administrador aceptar o rechazar una solicitud para creación de restaurante.\n" +
+            "Los estados deben de especificarse como string:" +
+            "\n * Pendiente\n * Approved\n * Rejected")]
+        public async Task<IActionResult> UpdateStatus([FromRoute]int id, [FromBody] RestaurantStatus status)
+        {
+            var traceId = $"00-update-restaurant-status-{Guid.NewGuid()}";
+            try
+            {
+                var res = await restaurantService.ChangeStatus(id, status);
+                if (!res)
+                    return NotFound(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "NOT_FOUND",
+                            message = "No se pudo cambiar el estado del restaurante",
+                            traceId = traceId
+                        }
+                    });
+
+                return Ok(new { success = true, message = "El estado del restaurante ha sido cambiado satisfactoriamente", traceId = traceId });
+            }
+            catch (Exception) 
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado.", traceId = traceId }
+                });
+            }
+
         }
 
         [HttpDelete("{id}")]
