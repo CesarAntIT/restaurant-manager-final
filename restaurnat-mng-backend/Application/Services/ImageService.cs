@@ -23,6 +23,7 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return Task.CompletedTask;
 
+
             var path = Path.Combine(_environment.WebRootPath, imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
 
             if (File.Exists(path))
@@ -42,7 +43,19 @@ namespace Application.Services
                 throw new ArgumentException("La imágen no es válida.");
             }
 
-            var folder = Path.Combine(_environment.WebRootPath, "images", "restaurants");
+            var webRoot = _environment.WebRootPath;
+
+            if (string.IsNullOrWhiteSpace(webRoot))
+            {
+                webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+                if (!Directory.Exists(webRoot))
+                {
+                    Directory.CreateDirectory(webRoot);
+                }
+            }
+
+            var folder = Path.Combine(webRoot, "images", "restaurants");
 
             if (!Directory.Exists(folder))
             {
