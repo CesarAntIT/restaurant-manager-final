@@ -19,18 +19,32 @@ namespace Infrastructure.Persistence.Repositories
                 .Include(r => r.Ingredients)
                 .Include(r => r.Reviews)
                 .Include(r => r.WorkDays)
+                .Include(r => r.RestaurantImages)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task<List<Restaurant>> GetAllAsync()
         {
-            return await context.Restaurants.ToListAsync();
+            return await context.Restaurants
+                .Include(r => r.Tables)
+                .Include(r => r.Menus)
+                .Include(r => r.Ingredients)
+                .Include(r => r.Reviews)
+                .Include(r => r.WorkDays)
+                .Include(r => r.RestaurantImages)
+                .ToListAsync();
         }
 
         public async Task<List<Restaurant>> GetByOwnerIdAsync(string ownerId)
         {
             return await context.Restaurants
                 .Where(r => r.OwnerId == ownerId)
+                .Include(r => r.Tables)
+                .Include(r => r.Menus)
+                .Include(r => r.Ingredients)
+                .Include(r => r.Reviews)
+                .Include(r => r.WorkDays)
+                .Include(r => r.RestaurantImages)
                 .ToListAsync();
         }
 

@@ -1,5 +1,6 @@
 using Application.Dtos.Restaurant;
 using Application.Interfaces;
+using Domain.Common.Enums;
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -8,10 +9,12 @@ namespace Application.Services
     public class RestaurantService : IRestaurantService
     {
         private readonly IRestaurantRepository restaurantRepository;
+        private readonly IImageService imageService;
 
-        public RestaurantService(IRestaurantRepository restaurantRepository)
+        public RestaurantService(IRestaurantRepository restaurantRepository, IImageService imageService)
         {
             this.restaurantRepository = restaurantRepository;
+            this.imageService = imageService;
         }
 
         public async Task<RestaurantDto?> GetByIdAsync(int id)
@@ -42,8 +45,21 @@ namespace Application.Services
                 Name = dto.Name,
                 Category = dto.Category,
                 Address = dto.Address,
-                PhoneNumber = dto.PhoneNumber
+                PhoneNumber = dto.PhoneNumber,
+                Status = RestaurantStatus.Pending
+
             };
+
+            foreach (var file in dto.Images)
+            {
+                var url = await imageService.UploadAsync(file);
+
+                restaurant.RestaurantImages.Add(new RestaurantImage
+                {
+
+                    Url = url
+                });
+            }
 
             var created = await restaurantRepository.AddAsync(restaurant);
             if (created == null) return null;
@@ -60,6 +76,26 @@ namespace Application.Services
             existing.Address = dto.Address;
             existing.PhoneNumber = dto.PhoneNumber;
             existing.Status = dto.Status;
+
+            if (dto.Images.Any())
+            {
+                foreach (var image in existing.RestaurantImages)
+                {
+                    await imageService.DeleteAsync(image.Url);
+                }
+
+                existing.RestaurantImages.Clear();
+
+                foreach (var file in dto.Images)
+                {
+                    var url = await imageService.UploadAsync(file);
+
+                    existing.RestaurantImages.Add(new RestaurantImage
+                    {
+                        Url = url
+                    });
+                }
+            }
 
             var updated = await restaurantRepository.UpdateRestaurantAsync(id, existing);
             if (updated == null) return null;
@@ -84,7 +120,11 @@ namespace Application.Services
             Status = r.Status,
             Address = r.Address,
             PhoneNumber = r.PhoneNumber,
-            CreatedAt = r.CreatedAt
+            CreatedAt = r.CreatedAt,
+            Images = r.RestaurantImages
+            .Select(i => i.Url)
+            .ToList()
+
         };
     }
 }

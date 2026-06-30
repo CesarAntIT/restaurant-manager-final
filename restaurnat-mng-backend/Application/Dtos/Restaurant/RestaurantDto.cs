@@ -1,4 +1,5 @@
 using Domain.Common.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Dtos.Restaurant
 {
@@ -12,6 +13,8 @@ namespace Application.Dtos.Restaurant
         public string Address { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        public List<String> Images { get; set; } = new();
     }
 
 }

@@ -15,6 +15,7 @@ namespace Application
 
             //services ioc
             services.AddScoped<IRestaurantService, RestaurantService>();
+            services.AddScoped<IImageService, ImageService>();
 
         }
 

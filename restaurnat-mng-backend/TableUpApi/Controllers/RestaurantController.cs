@@ -104,14 +104,14 @@ namespace TableUpApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Owner,Admin")]
+        [Authorize(Roles = "Owner")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = "Crear restaurante", Description = "Owner y Admin pueden crear un restaurante.")]
-        public async Task<IActionResult> Create([FromBody] SaveRestaurantDto dto)
+        [SwaggerOperation(Summary = "Crear restaurante", Description = "Owner puede crear un restaurante.")]
+        public async Task<IActionResult> Create([FromForm] SaveRestaurantDto dto)
         {
             var traceId = $"00-create-restaurant-{Guid.NewGuid()}";
             if (!ModelState.IsValid)
@@ -141,15 +141,15 @@ namespace TableUpApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Owner,Admin")]
+        [Authorize(Roles = "Owner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = "Actualizar restaurante", Description = "Owner y Admin pueden actualizar los datos de un restaurante.")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateRestaurantDto dto)
+        [SwaggerOperation(Summary = "Actualizar restaurante", Description = "Owner puede actualizar los datos de su restaurante.")]
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateRestaurantDto dto)
         {
             var traceId = $"00-update-restaurant-{Guid.NewGuid()}";
             if (!ModelState.IsValid)
@@ -174,13 +174,13 @@ namespace TableUpApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Owner, Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = "Eliminar restaurante", Description = "Solo Admin puede eliminar un restaurante.")]
+        [SwaggerOperation(Summary = "Eliminar restaurante", Description = "Admin y Owner pueden eliminar un restaurante.")]
         public async Task<IActionResult> Delete(int id)
         {
             var traceId = $"00-delete-restaurant-{Guid.NewGuid()}";
