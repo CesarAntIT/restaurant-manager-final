@@ -4,13 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async(event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -22,10 +24,24 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+ try {
+      const response = await fetch(`${API_URL}/api/auth/password/forgot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          Identifier: email.trim().toLowerCase(),
+        }),
+      });
+
+      setTimeout(() => {
       setSuccess("Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.");
       setIsLoading(false);
     }, 800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message.replaceAll('"', "") : "Error al registrar.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-/*import Link from "next/link";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -27,4 +27,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}*/
+}
