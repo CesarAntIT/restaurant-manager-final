@@ -12,13 +12,15 @@ if (!API_URL) {
 }
 
 type RequestItem = {
-  id: string;
+  id: number;
+  ownerId: string;
   name: string;
-  ownerName?: string;
-  description?: string;
-  address?: string;
-  images?: string[];
-  createdAt?: string;
+  category: string;
+  status: string;
+  address: string;
+  phoneNumber: string;
+  createdAt: string;
+  images: string[];
 };
 
 const FALLBACK_BACKGROUND = "https://images.unsplash.com/photo-1541544181069-3ede9f8b9500?auto=format&fit=crop&w=1600&q=80";
@@ -27,13 +29,16 @@ export default function AdminApprovalsPage() {
   const { user, token, isAuthenticated } = useAuthStore();
 
   const isAdmin = Boolean(
-    user && (user.Role === "Admin" || user.role === "Admin" || user.isAdmin)
+    user && (user.role === "Admin" || user.role === "Admin" || user.isAdmin)
   );
 
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ id: number; name: string; status: string } | null>(null);
+  const [undoData, setUndoData] = useState<{ restaurant: RequestItem; previousStatus: string } | null>(null);
+  const [notificationTimeout, setNotificationTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
@@ -44,7 +49,7 @@ export default function AdminApprovalsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/api/admin/restaurant-requests`, {
+      const res = await fetch(`${API_URL}/api/restaurants`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
         },
@@ -52,8 +57,10 @@ export default function AdminApprovalsPage() {
 
       if (!res.ok) throw new Error(await res.text());
 
-      const data = await res.json();
-      setRequests(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      const restaurantData = response.data || response;
+      const pendingRestaurants = Array.isArray(restaurantData) ? restaurantData.filter((r) => r.status === "Pending") : [];
+      setRequests(pendingRestaurants);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -61,23 +68,114 @@ export default function AdminApprovalsPage() {
     }
   }
 
-  async function decide(id: string, decision: "approve" | "deny") {
+  async function changeRestaurantStatus(
+    restaurantId: number,
+    status: string
+  ) {
     try {
-      setProcessingId(id);
+      setProcessingId(String(restaurantId));
       setError(null);
-      const res = await fetch(`${API_URL}/api/admin/restaurant-requests/${id}/decision`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({ decision }),
-      });
+      
+      // Encontrar el restaurante en la lista
+      const restaurant = requests.find((r) => r.id === restaurantId);
+      if (!restaurant) throw new Error("Restaurante no encontrado");
+      
+      const res = await fetch(
+        `${API_URL}/api/restaurants/change-status/${restaurantId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "accept": "*/*",
+            "Authorization": token ? `Bearer ${token}` : "",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(status),
+        }
+      );
 
       if (!res.ok) throw new Error(await res.text());
 
-      // quitar request de la UI
-      setRequests((prev) => prev.filter((r) => r.id !== id));
+      // Guardar datos para deshacer
+      setUndoData({
+        restaurant,
+        previousStatus: restaurant.status,
+      });
+
+      // Remover del listado
+      setRequests((prev) => prev.filter((r) => r.id !== restaurantId));
+
+      // Mostrar notificación
+      const statusMessage = status === "Approved" ? "aprobado" : "denegado";
+      setNotification({
+        id: restaurantId,
+        name: restaurant.name,
+        status: statusMessage,
+      });
+
+      // Limpiar timeout anterior si existe
+      if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+      }
+
+      // Auto-cerrar notificación después de 10 segundos
+      const timeout = setTimeout(() => {
+        setNotification(null);
+        setUndoData(null);
+      }, 10000);
+      setNotificationTimeout(timeout);
+
+      // Hacer refetch silencioso después de 500ms para actualizar datos
+      setTimeout(() => {
+        fetchRequests();
+      }, 500);
+
+      return await res.json();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      throw err;
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function undoStatusChange() {
+    if (!undoData) return;
+
+    try {
+      setProcessingId(String(undoData.restaurant.id));
+      setError(null);
+
+      const res = await fetch(
+        `${API_URL}/api/restaurants/change-status/${undoData.restaurant.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "accept": "*/*",
+            "Authorization": token ? `Bearer ${token}` : "",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify("Pending"),
+        }
+      );
+
+      if (!res.ok) throw new Error(await res.text());
+
+      // Volver a agregar el restaurante a la lista
+      setRequests((prev) => [...prev, undoData.restaurant]);
+
+      // Limpiar notificación y datos de deshacer
+      setNotification(null);
+      setUndoData(null);
+      
+      if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        setNotificationTimeout(null);
+      }
+
+      // Hacer refetch silencioso después de 500ms para actualizar datos
+      setTimeout(() => {
+        fetchRequests();
+      }, 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -151,31 +249,31 @@ export default function AdminApprovalsPage() {
                     <div>
                       <h2 className="text-xl font-semibold text-white">{r.name}</h2>
                       <div className="mt-1 space-y-1 text-sm text-stone-300">
-                        {r.ownerName && <p>Propietario: {r.ownerName}</p>}
-                        {r.address && <p>Dirección: {r.address}</p>}
-                        {r.createdAt && <p>Solicitado: {new Date(r.createdAt).toLocaleString()}</p>}
+                        <p>Categoría: {r.category}</p>
+                        <p>Estado: <span className="inline-block rounded-full px-2 py-1 text-xs font-semibold bg-amber-500/20 text-amber-200">{r.status}</span></p>
+                        <p>Teléfono: {r.phoneNumber}</p>
+                        <p>Dirección: {r.address}</p>
+                        <p>Solicitado: {new Date(r.createdAt).toLocaleString()}</p>
                       </div>
                     </div>
 
                     <div className="flex gap-2">
                       <button
-                        disabled={processingId === r.id}
-                        onClick={() => decide(r.id, "approve")}
+                        disabled={processingId === String(r.id)}
+                        onClick={() => changeRestaurantStatus(r.id, "Approved")}
                         className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {processingId === r.id ? "Procesando..." : "Aprobar"}
+                        {processingId === String(r.id) ? "Procesando..." : "Aprobar"}
                       </button>
                       <button
-                        disabled={processingId === r.id}
-                        onClick={() => decide(r.id, "deny")}
+                        disabled={processingId === String(r.id)}
+                        onClick={() => changeRestaurantStatus(r.id, "Rejected")}
                         className="rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {processingId === r.id ? "Procesando..." : "Denegar"}
+                        {processingId === String(r.id) ? "Procesando..." : "Denegar"}
                       </button>
                     </div>
                   </div>
-
-                  {r.description && <p className="mb-4 text-sm leading-relaxed text-stone-300">{r.description}</p>}
 
                   {r.images && r.images.length > 0 && (
                     <div className="grid gap-3 sm:grid-cols-3">
@@ -192,6 +290,21 @@ export default function AdminApprovalsPage() {
           )}
         </div>
       </div>
+
+      {notification && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-3xl border border-emerald-500/50 bg-emerald-950/80 p-4 text-sm text-emerald-200 backdrop-blur-xl shadow-2xl">
+          <div>
+            <p className="font-semibold">{notification.name} fue {notification.status}.</p>
+          </div>
+          <button
+            onClick={undoStatusChange}
+            disabled={processingId === String(notification.id)}
+            className="whitespace-nowrap rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {processingId === String(notification.id) ? "Procesando..." : "Deshacer cambios"}
+          </button>
+        </div>
+      )}
     </main>
   );
 }
