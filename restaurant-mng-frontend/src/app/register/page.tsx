@@ -18,6 +18,7 @@ export default function RegisterPage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<Role>("Cliente");
@@ -65,6 +66,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           Name: name.trim(),
           Email: email.trim().toLowerCase(),
+          Username: username.trim(),
           Password: password,
           ConfirmPassword: confirmPassword,
           Role: role,
@@ -148,6 +150,7 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Nombre completo" value={name} setValue={setName} placeholder="Ej. Nombre " type="text" />
+            <Input label="Username" value={username} setValue={setUsername} placeholder="Nombre de usuario" type="text" />
             <Input label="Correo electrónico" value={email} setValue={setEmail} placeholder="correo@ejemplo.com" type="email" />
 
             <div className="space-y-1.5">

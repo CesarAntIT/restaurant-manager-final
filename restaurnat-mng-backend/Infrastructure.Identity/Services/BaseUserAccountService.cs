@@ -1,4 +1,4 @@
-﻿using Application.Dtos.Email;
+using Application.Dtos.Email;
 using Application.Dtos.User;
 using Application.Interfaces;
 using Domain.Common.Enums;
@@ -229,6 +229,21 @@ namespace Infrastructure.Identity.Services
         //        return response;
         //    }
         //}
+
+        public virtual async Task<UserResponseDto> ConfirmAccountByEmailAsync(string email, string token)
+        {
+            UserResponseDto response = new() { HasError = false, Errors = [] };
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                response.Message = "No existe ninguna cuenta registrada con este correo electrónico.";
+                response.HasError = true;
+                return response;
+            }
+
+            return await ConfirmAccountAsync(user.Id, token);
+        }
 
         public virtual async Task<UserResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request)
         {
