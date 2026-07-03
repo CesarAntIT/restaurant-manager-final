@@ -61,4 +61,6 @@ app.UseAuthorization();
 app.UseHealthChecks("/health");
 app.MapControllers();
 
+app.UseStaticFiles();
+
 await app.RunAsync();
