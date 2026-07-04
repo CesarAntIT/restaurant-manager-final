@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type restaurantReq = {
+interface restaurantReq {
   id: number;
   ownerId: string;
   name: string;
@@ -15,6 +15,13 @@ type restaurantReq = {
   createdAt: string;
   images: string[];
 };
+interface UpdateRestaurantProps {
+  restaurant: restaurantReq;
+  onClose: () => void;
+  onSuccess: () => void;
+  token: string | null;
+  setError: (msg: string | null) => void;
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -27,6 +34,7 @@ export default function MyRestaurants() {
   const [restaurantes, setRestaurantes] = useState<restaurantReq[]>([]);
   const [searchVal, setSearchVal] = useState("");
   const [toRemove, setToRemove] = useState<restaurantReq | null>(null);
+  const [toEdit, setToEdit] = useState<restaurantReq | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const { user, token, isAuthenticated } = useAuthStore();
@@ -212,7 +220,13 @@ export default function MyRestaurants() {
             <div className="grid gap-4">
               {restaurantes.map((r) => RestaurantCard(r))}
               {toRemove == null ? null : <RemoveRestaurantCard/>}
-              {showCreate ? <CreateRestaurant/> : null}
+              {showCreate ? <CreateRestaurant /> : null}
+              {toEdit == null ? null :
+                <EditRestaurant onClose={() => setToEdit(null)}
+                onSuccess={getMyRestaurants}
+                restaurant={toEdit}
+                setError={setError}
+                token={token} />}
             </div>
             
           </div>
@@ -266,13 +280,12 @@ export default function MyRestaurants() {
         </div>
         <div className="">  
         <button className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20">Detalles</button> <br/>
-        <button className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20" >Editar</button> <br/>
+        <button className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20" onClick={() => setToEdit(r)} >Editar</button> <br/>
         <button className="mt-5 bg-red-500/50 p-1.5 rounded-xl hover:bg-red-500 hover:font-bold w-20" onClick={() => setToRemove(r)}>Eliminar</button> <br/>
         </div>
     </article> 
     )
   }
-  
   function CreateRestaurant() {
 
     const [formData, setFormData] = useState({
@@ -434,6 +447,162 @@ export default function MyRestaurants() {
         </div>)
     
   }
-}
+
+  function EditRestaurant({ restaurant, onClose, onSuccess, token, setError }: UpdateRestaurantProps) {
+    
+      const [formData, setFormData] = useState({
+        name: restaurant.name,
+        category: restaurant.category,
+        address: restaurant.address,
+        phoneNumber: restaurant.phoneNumber
+      });
+    
+      const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+    
+      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      };
+    
+      const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+          setSelectedImages(e.target.files);
+        }
+      };
+    
+      async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!token) return;
+    
+        try {
+          setIsSubmitting(true);
+          setError(null);
+          
+          const data = new FormData();
+          
+          data.append("name", formData.name.trim() || restaurant.name);
+          data.append("category", formData.category.trim() || restaurant.category);
+          data.append("address", formData.address.trim() || restaurant.address);
+          data.append("phoneNumber", formData.phoneNumber.trim() || restaurant.phoneNumber);
+    
+          if (selectedImages && selectedImages.length > 0) {
+            Array.from(selectedImages).forEach((file) => {
+              data.append("images", file);
+            });
+          } else {
+            data.append("images", "string");
+          }
+    
+          const res = await fetch(`${API_URL}/api/restaurants/${restaurant.id}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: data,
+          });
+    
+          if (!res.ok) {
+            throw new Error("Error al intentar actualizar el restaurante en el servidor.");
+          }
+    
+          onSuccess(); // Refresca la lista de restaurantes
+          onClose();   // Cierra el formulario
+    
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err));
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+    
+      return (
+        <div className="w-full absolute z-50 rounded-[2rem] border border-white/10 bg-[#0f0906]/95 p-6 shadow-2xl shadow-black/60 backdrop-blur-3xl sm:p-8 mb-5 left-0 top-0">
+          <h2 className="text-2xl font-bold text-white mb-1">Editar Restaurante</h2>
+          <p className="text-sm text-stone-400 mb-4">Modificando los datos de: <span className="text-amber-400 font-semibold">{restaurant.name}</span></p>
+          
+          <form onSubmit={handleSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-sm font-medium text-stone-300 mb-1">Nombre</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
+                placeholder={restaurant.name}
+              />
+            </div>
+    
+            <div>
+              <label className="block text-sm font-medium text-stone-300 mb-1">Categoría</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
+                placeholder={restaurant.category}
+              />
+            </div>
+    
+            <div>
+              <label className="block text-sm font-medium text-stone-300 mb-1">Dirección</label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
+                placeholder={restaurant.address}
+              />
+            </div>
+    
+            <div>
+              <label className="block text-sm font-medium text-stone-300 mb-1">Teléfono</label>
+              <input
+                type="text"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
+                placeholder={restaurant.phoneNumber == null ? "809-000-0000" : restaurant.phoneNumber.trim() }
+              />
+            </div>
+    
+            <div>
+              <label className="block text-sm font-medium text-stone-300 mb-1">Actualizar imágenes (Opcional)</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full text-sm text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-500/20 file:text-amber-200 hover:file:bg-amber-500/30 cursor-pointer"
+              />
+            </div>
+    
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-stone-300 hover:text-white disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-xl bg-amber-400 px-5 py-2 text-sm font-bold text-black transition hover:bg-amber-500 active:bg-amber-600 disabled:opacity-50"
+              >
+                {isSubmitting ? "Actualizando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+  }
+  
+  }
 
 
