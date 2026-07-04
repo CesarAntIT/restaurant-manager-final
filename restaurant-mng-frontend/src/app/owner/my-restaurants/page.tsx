@@ -2,7 +2,6 @@
 import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import Link from "next/link";
-import { error } from "node:console";
 import { useEffect, useState } from "react";
 
 type restaurantReq = {
@@ -27,11 +26,37 @@ export default function MyRestaurants() {
   const [loading, setLoading] = useState(false);
   const [restaurantes, setRestaurantes] = useState<restaurantReq[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [toRemove, setToRemove] = useState<restaurantReq | null>(null);
 
   const { user, token, isAuthenticated } = useAuthStore();
   const isOwner = Boolean(user && user.role == "Dueño" && !user.isAdmin);
 
+  async function removeRestaurant(id: number) {
+    try {
+      const res = await fetch(`${API_URL}/api/restaurants/${id}`, {
+        method: "DELETE", 
+        headers: {
+          Authorization: token ? `Bearer ${token}` : ""
+        }
+      });
+      const result = await res.json();
+      console.log(result);
 
+      if (!res.ok) {
+        return Error("Could not remove the restaurant")
+      }
+
+      if ( result.success == false) {
+        return Error( result.error.code + " " + result.error.message)
+      }
+
+      setRestaurantes(restaurantes.filter(r => r.id !== id));
+      setToRemove(null);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   async function getMyRestaurants() {
     try {
@@ -47,7 +72,7 @@ export default function MyRestaurants() {
 
       const json = await res.json()
       if (json.HasError == true) {
-        throw error(json.Error)
+        throw error(json.Error ?? "Could not obtain data from the server");
       }
 
       const restaurantData = json.data
@@ -62,7 +87,7 @@ export default function MyRestaurants() {
 
   useEffect(() => {
     if (!isAuthenticated || !isOwner) return;
-    getMyRestaurants();
+      getMyRestaurants();
   }, [isAuthenticated, isOwner]);
 
   if (!isAuthenticated) {
@@ -129,10 +154,16 @@ export default function MyRestaurants() {
             Home
           </Link>
           <Link
+            href="/"
+            className="rounded-full px-4 py-2 transition hover:bg-white/10"
+          >
+            Restaurants
+          </Link>
+          <Link
             href="/restaurants"
             className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2"
           >
-            Restaurants
+            My Restaurants
           </Link>
           <Link
             href="/about"
@@ -175,44 +206,73 @@ export default function MyRestaurants() {
             </div>
             <hr className="mt-5 mb-5 " />
 
+
+            
             <div className="grid gap-4">
               {restaurantes.map((r) => RestaurantCard(r))}
+              {
+                toRemove == null ? null : RemoveRestaurantCard()
+              }
             </div>
+            
           </div>
         </div>
       </div>
     </main>
   );
-}
 
-function RestaurantCard(r: restaurantReq) {
-  return (
-  <article key={r.id} className="overflow-hidden flex justify-between rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
-    <div>
-      <h2 className="text-xl font-semibold text-white">
-        {r.name}
-      </h2>
-      <div className="mt-1 space-y-1 text-sm text-stone-300">
-        <p>Categoría: {r.category}</p>
-        <p>
-            Estado:{" "}
-            <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold 
-              ${r.status === "Approved" ? "bg-emerald-500/20"
-                : r.status === "Rejected" ? "bg-rose-500/20 text-rose-300"
-                : "bg-amber-500/20 text-amber-200"} bg-amber-500/20 text-amber-200`}>
-            {r.status}
-          </span>
-        </p>
-        <p>Teléfono: {r.phoneNumber}</p>
-        <p>Dirección: {r.address}</p>
+  function RemoveRestaurantCard() {
+    return (
+      <div className="w-full absolute z-40 rounded-4xl border border-white/10 bg-[#0f0906]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8 mb-5">
+            <h1>
+              Eliminar el Restaurante?
+            </h1>
+            <br/>
+            <p>
+              Desea eliminar el restaurante <b><i>{toRemove ? toRemove.name : ""}</i></b><br/>
+              el cual se encuentra en la dirección <b>{toRemove ? toRemove.address : ""}</b>
+            </p>
+      
+            <button onClick={ toRemove != null ? () => removeRestaurant(toRemove.id) : () => null} className="mr-5 bg-red-500 text-white w-30 h-10 rounded-xl hover:bg-red-500/50 hover:font-bold active:bg-red-400">Eliminar</button>
+            <button onClick={() => setToRemove(null)}>Cancelar</button>
+          </div>  
+    )
+
+  }
+  
+  function RestaurantCard(r: restaurantReq) {
+    return (
+      <article key={r.id} className="overflow-hidden flex justify-between rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
+        
+        <div>
+
+        <h2 className="text-xl font-semibold text-white">
+          {r.name}
+        </h2>
+        <div className="mt-1 space-y-1 text-sm text-stone-300">
+          <p>Categoría: {r.category}</p>
+          <p>
+              Estado:{" "}
+              <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold 
+                ${r.status === "Approved" ? "bg-emerald-500/20"
+                  : r.status === "Rejected" ? "bg-rose-500/20 text-rose-300"
+                  : "bg-amber-500/20 text-amber-200"} bg-amber-500/20 text-amber-200`}>
+              {r.status}
+            </span>
+          </p>
+          <p>Teléfono: {r.phoneNumber}</p>
+          <p>Dirección: {r.address}</p>
+          </div>
+  
         </div>
-
-      </div>
-      <div className="">  
-      <button className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20">Detalles</button> <br/>
-      <button className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20">Editar</button> <br/>
-      <button className="mt-5 bg-red-500/50 p-1.5 rounded-xl hover:bg-red-500 hover:font-bold w-20">Eliminar</button> <br/>
-      </div>
-  </article> 
-  )
+        <div className="">  
+        <button className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20">Detalles</button> <br/>
+        <button className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20" >Editar</button> <br/>
+        <button className="mt-5 bg-red-500/50 p-1.5 rounded-xl hover:bg-red-500 hover:font-bold w-20" onClick={() => setToRemove(r)}>Eliminar</button> <br/>
+        </div>
+    </article> 
+    )
+  }
 }
+
+
