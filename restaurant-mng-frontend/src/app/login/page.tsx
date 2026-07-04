@@ -145,7 +145,7 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-[11px] text-[#d4b87a] tracking-[1px] uppercase font-semibold">Contraseña</label>
-                <Link href="/reset-password" className="text-[11px] text-[#bc7629] hover:text-[#ce994b] transition-colors">
+                <Link href="/forgot-password" className="text-[11px] text-[#bc7629] hover:text-[#ce994b] transition-colors">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
