@@ -93,6 +93,13 @@ namespace Application.Services
             return updated == null ? (false, "No se pudo cancelar la reserva.") : (true, null);
         }
 
+        public async Task<List<ReservationDto>> GetActiveReservationsAsync()
+        {
+            var reservations = await reservationRepository.GetActiveReservationsAsync();
+            return reservations.Select(MapToDto).ToList();
+        }
+
+
         private static ReservationDto MapToDto(Reservation r) => new()
         {
             Id = r.Id,
