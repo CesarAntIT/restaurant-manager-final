@@ -254,6 +254,7 @@ export default function AdminApprovalsPage() {
                         <p>Teléfono: {r.phoneNumber}</p>
                         <p>Dirección: {r.address}</p>
                         <p>Solicitado: {new Date(r.createdAt).toLocaleString()}</p>
+                        
                       </div>
                     </div>
 
@@ -277,9 +278,9 @@ export default function AdminApprovalsPage() {
 
                   {r.images && r.images.length > 0 && (
                     <div className="grid gap-3 sm:grid-cols-3">
-                      {r.images.map((src, i) => (
+                      {r.images.map((imgSrc, i) => (
                         <div key={i} className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-                          <img src={src} alt={`${r.name}-img-${i}`} className="h-36 w-full object-cover" />
+                          <img src={API_URL+imgSrc} alt={`${r.name}-img-${i}`} className="h-36 w-full object-cover" />
                         </div>
                       ))}
                     </div>

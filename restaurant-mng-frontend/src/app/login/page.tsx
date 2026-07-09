@@ -83,69 +83,79 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex font-sans antialiased bg-[#0e0b04]">
+    <main className="grid min-h-screen grid-cols-1 bg-[#120904] text-stone-100 lg:grid-cols-2">
 
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
+      {/* LEFT PANEL — imagen restaurante */}
+      <section className="relative hidden flex-col justify-between border-r border-[#2a170c] p-12 lg:flex overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=85"
           alt="Restaurante elegante"
           className="absolute inset-0 w-full h-full object-cover opacity-50"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#4a7934]/50 via-[#1c1107]/40 to-[#562e1f]/70" />
-        <div className="relative z-10 flex flex-col justify-between w-full p-12">
+
+        <div className="relative z-10 flex flex-col justify-between h-full">
           <div className="flex items-center gap-3">
-            <Image src="/Logo.png" alt="TableUp Logo" width={36} height={36} className="rounded-lg object-contain" />
-            <span className="font-serif italic text-xl font-bold text-[#d4ceb6] tracking-wide">TableUp</span>
+            <div className="flex h-16 w-16 items-center justify-center">
+              <Image src="/Logo.png" alt="TableUp Logo" width={80} height={80} className="object-contain" />
+            </div>
+            <span className="font-serif text-xl font-semibold italic text-white">TableUp</span>
           </div>
-          <div>
-            <div className="w-10 h-[2px] bg-[#bc7629] mb-5" />
-            <p className="font-serif italic text-2xl text-[#d4ceb6] leading-relaxed mb-3 max-w-xs">
-              "La excelencia no es un acto,<br />es un hábito."
+
+          <div className="max-w-md space-y-4">
+            <p className="font-serif text-3xl italic leading-relaxed text-white">
+              &quot;La excelencia no es un acto, es un hábito.&quot;
             </p>
-            <p className="text-[10.5px] text-[#ce994b] tracking-[2.5px] uppercase font-medium">Gestión Gastronómica</p>
+            <div className="flex items-center gap-3">
+              <span className="h-[2px] w-8 bg-amber-600" />
+              <span className="font-mono text-xs uppercase tracking-[0.3em] text-amber-500">
+                Gestión gastronómica
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-1 items-center justify-center bg-[#1c1107] px-8 py-12 lg:px-16">
-        <div className="w-full max-w-sm">
+      {/* RIGHT PANEL — formulario */}
+      <section className="flex min-h-screen items-center justify-center px-6 py-10 sm:px-12">
+        <div className="w-full max-w-md space-y-6">
 
-          <div className="mb-10">
-            <Image src="/Logo.png" alt="TableUp Logo" width={70} height={100} className="rounded-xl object-contain mb-5" />
-            <h1 className="font-serif italic text-3xl font-bold text-[#d4ceb6] tracking-wide mb-1">TableUp</h1>
-            <p className="text-[10px] text-[#bc7629] tracking-[2.5px] uppercase font-medium">Gestión Gastronómica Inteligente</p>
+          <div className="space-y-3 text-center lg:text-left">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center lg:mx-0">
+              <Image src="/Logo.png" alt="TableUp Logo" width={100} height={100} className="object-contain" />
+            </div>
+            <h1 className="font-serif text-4xl font-semibold italic text-white">TableUp</h1>
+            <p className="font-mono text-xs uppercase tracking-[0.25em] text-amber-500">
+              Gestión gastronómica inteligente
+            </p>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-[#d4ceb6] mb-1">Bienvenido de vuelta</h2>
-            <p className="text-sm text-[#a08c60]">Por favor ingresa tus credenciales.</p>
+          <div>
+            <h2 className="text-xl font-medium text-white">Bienvenido de vuelta</h2>
+            <p className="text-sm text-stone-400">Por favor ingresa tus credenciales.</p>
           </div>
 
           {error && (
-            <div className="mb-6 px-4 py-3 rounded-lg bg-red-950/70 border border-red-800/60 text-[#d4ceb6] text-sm text-center">
-              {error}
-            </div>
+            <div className="rounded-lg border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{error}</div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4">
 
-            <div>
-              <label className="block text-[11px] text-[#d4b87a] tracking-[1px] uppercase font-semibold mb-2">
-                Correo electrónico
-              </label>
+            <label className="block space-y-1.5">
+              <span className="block font-mono text-xs font-bold uppercase text-amber-400">Correo electrónico</span>
               <input
                 type="email"
                 placeholder="correo@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-[#0e0b04] border border-[#3a2c10] text-[#d4ceb6] placeholder-[#6a5838] text-sm focus:outline-none focus:border-[#bc7629] focus:ring-1 focus:ring-[#bc7629]/40 transition-all duration-200"
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2.5 text-sm text-white placeholder-stone-600 outline-none focus:border-amber-500"
               />
-            </div>
+            </label>
 
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-[11px] text-[#d4b87a] tracking-[1px] uppercase font-semibold">Contraseña</label>
-                <Link href="/reset-password" className="text-[11px] text-[#bc7629] hover:text-[#ce994b] transition-colors">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="font-mono text-xs font-bold uppercase text-amber-400">Contraseña</span>
+                <Link href="/forgot-password" className="text-xs text-stone-400 hover:text-white transition-colors">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -154,40 +164,40 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-[#0e0b04] border border-[#3a2c10] text-[#d4ceb6] placeholder-[#6a5838] text-sm focus:outline-none focus:border-[#bc7629] focus:ring-1 focus:ring-[#bc7629]/40 transition-all duration-200"
+                className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2.5 text-sm text-white placeholder-stone-600 outline-none focus:border-amber-500"
               />
             </div>
 
-            <div className="flex items-center gap-2.5 pt-1">
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="remember"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="w-3.5 h-3.5 rounded-sm border border-[#3a2c10] bg-[#0e0b04] accent-[#bc7629] cursor-pointer"
+                className="accent-amber-600 cursor-pointer"
               />
-              <label htmlFor="remember" className="text-xs text-[#a08c60] cursor-pointer select-none">Recordarme</label>
+              <label htmlFor="remember" className="text-xs text-stone-400 cursor-pointer select-none">Recordarme</label>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 mt-2 bg-[#bc7629] hover:bg-[#ce994b] active:scale-[0.98] text-[#1c1107] font-semibold text-[13px] tracking-[1.5px] uppercase rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-amber-600 py-3 text-xs font-bold uppercase tracking-wider text-neutral-950 transition hover:bg-amber-500 disabled:opacity-60"
             >
               {loading ? 'Validando...' : 'Iniciar sesión'}
             </button>
 
-            <p className="text-center text-xs text-[#a08c60] pt-1">
-              ¿No tienes una cuenta?{' '}
-              <Link href="/register" className="text-[#ce994b] font-medium hover:underline transition-all">
-                Regístrate aquí
+            <div className="text-center">
+              <Link href="/register" className="text-xs text-stone-400 hover:text-white">
+                ¿No tienes una cuenta?{' '}
+                <span className="font-semibold text-amber-600">Regístrate aquí</span>
               </Link>
-            </p>
+            </div>
 
           </form>
         </div>
-      </div>
+      </section>
 
-    </div>
+    </main>
   );
 }

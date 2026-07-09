@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TableUpContextDB))]
-    partial class TableUpContextDBModelSnapshot : ModelSnapshot
+    [Migration("20260706160234_AgregarColumnaPromedioRating")]
+    partial class AgregarColumnaPromedioRating
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,6 +224,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("TableId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("TableId1")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -229,6 +235,8 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TableId");
+
+                    b.HasIndex("TableId1");
 
                     b.ToTable("Reservations", (string)null);
                 });
@@ -360,6 +368,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("RestaurantId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("RestaurantId1")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Seats")
                         .HasColumnType("integer");
 
@@ -369,6 +380,8 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("RestaurantId");
+
+                    b.HasIndex("RestaurantId1");
 
                     b.ToTable("Tables", (string)null);
                 });
@@ -518,11 +531,15 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Reservation", b =>
                 {
-                    b.HasOne("Domain.Entities.Table", "Table")
+                    b.HasOne("Domain.Entities.Table", null)
                         .WithMany()
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Domain.Entities.Table", "Table")
+                        .WithMany()
+                        .HasForeignKey("TableId1");
 
                     b.Navigation("Table");
                 });
@@ -555,11 +572,15 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Table", b =>
                 {
-                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
+                    b.HasOne("Domain.Entities.Restaurant", null)
                         .WithMany("Tables")
                         .HasForeignKey("RestaurantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId1");
 
                     b.Navigation("Restaurant");
                 });

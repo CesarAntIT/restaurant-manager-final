@@ -1,6 +1,10 @@
 using Application;
+using Application.Interfaces;
+using Application.Services;
+using Domain.Interfaces;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using Infrastructure.Shared;
 using restaurnat_mng_backend.Extensions;
 using System.Text.Json.Serialization;
@@ -29,6 +33,10 @@ builder.Services.AddHealthChecks();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 builder.Services.AddProblemDetails();
+builder.Services.AddScoped<ITableRepository, TableRepository>();
+builder.Services.AddScoped<ITableService, TableService>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
 
 builder.Services.AddCors(options =>
 {
