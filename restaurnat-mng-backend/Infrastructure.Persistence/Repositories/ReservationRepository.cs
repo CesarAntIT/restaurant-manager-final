@@ -46,6 +46,14 @@ namespace Infrastructure.Persistence.Repositories
                     && r.DateTimeReservation <= to)
                 .ToListAsync();
         }
+        public async Task<List<Reservation>> GetActiveReservationsAsync()
+        {
+            return await context.Reservations
+                .Include(r => r.Table)
+                .Where(r => r.Status == ReservationStatus.Pending)
+                .OrderBy(r => r.DateTimeReservation)
+                .ToListAsync();
+        }
 
         public async Task<Reservation?> UpdateStatusAsync(int id, ReservationStatus status)
         {

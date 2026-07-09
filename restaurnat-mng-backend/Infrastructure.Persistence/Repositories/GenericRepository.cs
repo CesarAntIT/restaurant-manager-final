@@ -26,7 +26,7 @@ namespace Infrastructure.Persistence.Repositories
             return await context.SaveChangesAsync();
         }
 
-        public virtual async Task<Entity?> UpdateAsync(Guid id, Entity entity)
+        public virtual async Task<Entity?> UpdateAsync(int id, Entity entity)
         {
             context.Set<Entity>().Update(entity);
             await context.SaveChangesAsync();
@@ -37,7 +37,7 @@ namespace Infrastructure.Persistence.Repositories
             context.Set<Entity>().UpdateRange(entities);
             return await context.SaveChangesAsync();
         }
-        public virtual async Task DeleteAsync(Guid id)
+        public virtual async Task DeleteAsync(int id)
         {
             var entity = await context.Set<Entity>().FindAsync(id);
             if (entity != null)
@@ -62,7 +62,7 @@ namespace Infrastructure.Persistence.Repositories
 
             return await query.ToListAsync(); 
         }    
-        public virtual async Task<Entity?> GetById(Guid id)
+        public virtual async Task<Entity?> GetById(int id)
         {
             return await context.Set<Entity>().FindAsync(id);
         }

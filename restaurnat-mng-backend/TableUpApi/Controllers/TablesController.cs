@@ -2,6 +2,7 @@ using Application.Dtos.Table;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace WebApi.Controllers
 {
@@ -18,6 +19,10 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
+        [SwaggerOperation(
+            Summary = "Obtener mesas de un restaurante",
+            Description = "Devuelve el listado completo de mesas asociadas a un restaurante específico"
+        )]
         public async Task<ActionResult<List<TableDto>>> GetByRestaurant(int restaurantId)
         {
             var tables = await tableService.GetByRestaurantIdAsync(restaurantId);
@@ -25,6 +30,10 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [SwaggerOperation(
+            Summary = "Obtener mesa por ID",
+            Description = "Devuelve los detalles de una mesa específica dentro de un restaurante"
+        )]
         public async Task<ActionResult<TableDto>> GetById(int restaurantId, int id)
         {
             var table = await tableService.GetByIdAsync(id);
@@ -35,6 +44,10 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
+        [SwaggerOperation(
+            Summary = "Crear una mesa",
+            Description = "Permite crear una nueva mesa dentro de un restaurante"
+        )]
         public async Task<ActionResult<TableDto>> Create(int restaurantId, [FromBody] SaveTableDto dto)
         {
             var created = await tableService.CreateAsync(restaurantId, dto);
@@ -45,6 +58,10 @@ namespace WebApi.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [SwaggerOperation(
+            Summary = "Actualizar una mesa",
+            Description = "Permite modificar los datos de una mesa existente en un restaurante"
+        )]
         public async Task<ActionResult<TableDto>> Update(int restaurantId, int id, [FromBody] UpdateTableDto dto)
         {
             var updated = await tableService.UpdateAsync(restaurantId, id, dto);
@@ -55,6 +72,10 @@ namespace WebApi.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [SwaggerOperation(
+            Summary = "Eliminar una mesa",
+            Description = "Permite eliminar una mesa de un restaurante específico"
+        )]
         public async Task<IActionResult> Delete(int restaurantId, int id)
         {
             var deleted = await tableService.DeleteAsync(restaurantId, id);
