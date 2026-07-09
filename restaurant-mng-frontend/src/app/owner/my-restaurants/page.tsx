@@ -81,7 +81,7 @@ export default function MyRestaurants() {
 
       const json = await res.json()
       if (json.HasError == true) {
-        throw error(json.Error ?? "Could not obtain data from the server");
+        throw new Error(json.Error ?? "Could not obtain data from the server");
       }
 
       const restaurantData = json.data
@@ -205,7 +205,7 @@ export default function MyRestaurants() {
             <div className="flex">
               <input
                 className="w-full rounded-lg border border-[#2e1910] bg-[#1a100a] px-3 py-2.5 text-sm text-white placeholder-stone-600 outline-none focus:border-amber-500"
-                placeholder="Escribe nombre del Restaurante"
+                placeholder="Escriba el nombre del restaurante"
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
               />
@@ -244,7 +244,7 @@ export default function MyRestaurants() {
             <br/>
             <p>
               Desea eliminar el restaurante <b><i>{toRemove ? toRemove.name : ""}</i></b><br/>
-              el cual se encuentra en la dirección <b>{toRemove ? toRemove.address : ""}</b>
+              el cual se encuentra en la dirección <b>{toRemove ? toRemove.address : ""}?</b>
             </p>
       
             <button onClick={ toRemove != null ? () => removeRestaurant(toRemove.id) : () => null} className="mr-5 bg-red-500 text-white w-30 h-10 rounded-xl hover:bg-red-500/50 hover:font-bold active:bg-red-400">Eliminar</button>
@@ -275,7 +275,22 @@ export default function MyRestaurants() {
           </p>
           <p>Teléfono: {r.phoneNumber}</p>
           <p>Dirección: {r.address}</p>
-          </div>
+          
+          </div> 
+
+          {r.images && r.images.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-3 mt-3">
+              {r.images.map((imgSrc, i) => (
+                <div key={i} className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+                  <img 
+                    src={`${API_URL}${imgSrc}`} 
+                    alt={`${r.name}-img-${i}`} 
+                    className="h-36 w-full object-cover" 
+                  />
+                </div>
+              ))}
+            </div>
+        )}
   
         </div>
         <div className="">  
