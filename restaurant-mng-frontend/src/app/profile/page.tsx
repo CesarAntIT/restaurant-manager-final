@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 
 type UserData = {
   id?: string | number;
+  Id?: string | number;
   name?: string;
   Name?: string;
   username?: string;
@@ -17,6 +18,7 @@ type UserData = {
 };
 
 type RestaurantDraft = {
+  id?: number;
   name: string;
   category: string;
   phone: string;
@@ -28,9 +30,22 @@ type RestaurantDraft = {
 };
 
 type RestaurantRow = RestaurantDraft & {
+  id?: number;
   status: "Borrador" | "Pendiente" | "Aprobado";
   updatedAt: string;
 };
+
+type ReservationItem = {
+  id?: number;
+  restaurantId?: number;
+  tableId?: number;
+  numberMesa?: string;
+  dateTimeReservation?: string;
+  peopleCount?: number;
+  status?: string | number;
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5155";
 
 const ownerRoles = ["owner", "dueno", "due\u00f1o", "due\u00c3\u00b1o"];
 
@@ -66,17 +81,21 @@ const foodCategories = [
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser, logout } = useAuthStore() as {
+  const { user, token, isAuthenticated, updateUser, logout } = useAuthStore() as {
     user: UserData | null;
+    token: string | null;
     isAuthenticated: boolean;
     updateUser: (data: Partial<UserData>) => void;
     logout: () => void;
   };
 
   const [saved, setSaved] = useState(false);
+  const [loadingApi, setLoadingApi] = useState(false);
+  const [apiMessage, setApiMessage] = useState("");
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [favoriteCategories, setFavoriteCategories] = useState(["Italiana", "Postres"]);
   const [ownerMessage, setOwnerMessage] = useState("Restaurante listo para revisar antes de enviar a aprobacion.");
+  const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [restaurant, setRestaurant] = useState<RestaurantDraft>({
     name: "TableUp Bistro",
     category: "Italiana",
@@ -110,6 +129,74 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated, router, sessionLoaded, user]);
 
+  useEffect(() => {
+    if (!sessionLoaded || !isAuthenticated || !token) return;
+
+    const controller = new AbortController();
+    const authToken = token;
+
+    async function loadProfileData() {
+      setLoadingApi(true);
+      setApiMessage("");
+
+      try {
+        const profileJson = await apiRequest("/api/auth/me", authToken, { signal: controller.signal });
+        const profile = profileJson?.data;
+
+        if (profile) {
+          updateUser({
+            id: profile.id ?? profile.Id,
+            name: profile.name ?? profile.Name,
+            username: profile.username ?? profile.Username,
+            email: profile.email ?? profile.Email,
+            role: profile.role ?? profile.Role,
+          });
+        }
+
+        const profileRole = String(profile?.role ?? profile?.Role ?? user?.role ?? "");
+        const normalizedRole = profileRole
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        const owner = ownerRoles.includes(normalizedRole);
+
+        if (owner) {
+          const restaurantsJson = await apiRequest("/api/restaurants/my-restaurants", authToken, {
+            signal: controller.signal,
+          });
+          const rows = Array.isArray(restaurantsJson?.data)
+            ? restaurantsJson.data.map(mapRestaurantFromApi)
+            : [];
+
+          setRestaurantRows(rows);
+          if (rows[0]) {
+            setRestaurant(rows[0]);
+            setOwnerMessage("Restaurantes cargados desde la API.");
+          } else {
+            setOwnerMessage("No tienes restaurantes registrados en la API todavia.");
+          }
+        } else {
+          const reservationsJson = await apiRequest("/api/reservations/me", authToken, {
+            signal: controller.signal,
+          });
+          setReservations(Array.isArray(reservationsJson) ? reservationsJson : []);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setApiMessage(error instanceof Error ? error.message : "No se pudo conectar el perfil con la API.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingApi(false);
+        }
+      }
+    }
+
+    loadProfileData();
+
+    return () => controller.abort();
+  }, [isAuthenticated, sessionLoaded, token, updateUser, user?.role]);
+
   const userView = useMemo(() => {
     const role = user?.role ?? "Client";
     const normalizedRole = role
@@ -139,40 +226,89 @@ export default function ProfilePage() {
     );
   }
 
-  function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("name") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+    if (password || confirmPassword) {
+      if (!token) {
+        setApiMessage("No hay token de sesion para actualizar el perfil.");
+        return;
+      }
+
+      try {
+        const json = await apiRequest("/api/auth/me/profile", token, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            Name: name,
+            Password: password,
+            ConfirmPassword: confirmPassword,
+          }),
+        });
+
+        updateUser({
+          name: json?.data?.name ?? json?.data?.Name ?? name,
+        });
+        setApiMessage("Perfil actualizado en la API.");
+      } catch (error) {
+        setApiMessage(error instanceof Error ? error.message : "No se pudo actualizar el perfil en la API.");
+        return;
+      }
+    } else {
+      setApiMessage("Nombre actualizado en esta sesion. Para guardar en API, completa nueva contrasena y confirmacion.");
+    }
+
     updateUser({
-      name: String(formData.get("name") ?? "").trim(),
+      name,
       username: String(formData.get("username") ?? "").trim(),
     });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2500);
   }
 
-  function handleRestaurantSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleRestaurantSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setRestaurantRows((current) => {
-      const existingIndex = current.findIndex((item) => item.name === restaurant.name);
-      const savedRestaurant: RestaurantRow = {
-        ...restaurant,
-        status: "Pendiente",
-        updatedAt: "Ahora",
-      };
+    if (!token) {
+      setOwnerMessage("No hay token de sesion para guardar el restaurante en la API.");
+      return;
+    }
 
-      if (existingIndex >= 0) {
-        return current.map((item, index) => (index === existingIndex ? savedRestaurant : item));
-      }
+    try {
+      const formData = new FormData();
+      formData.append("Name", restaurant.name);
+      formData.append("Category", restaurant.category);
+      formData.append("Address", restaurant.address);
+      formData.append("PhoneNumber", restaurant.phone);
 
-      return [savedRestaurant, ...current];
-    });
-    setOwnerMessage("Restaurante guardado en el perfil y marcado como pendiente de aprobacion.");
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
+      const endpoint = restaurant.id ? `/api/restaurants/${restaurant.id}` : "/api/restaurants";
+      const method = restaurant.id ? "PUT" : "POST";
+      const json = await apiRequest(endpoint, token, { method, body: formData });
+      const savedRestaurant = mapRestaurantFromApi(json?.data);
+
+      setRestaurantRows((current) => {
+        const existingIndex = current.findIndex((item) => item.id === savedRestaurant.id);
+        if (existingIndex >= 0) {
+          return current.map((item, index) => (index === existingIndex ? savedRestaurant : item));
+        }
+
+        return [savedRestaurant, ...current];
+      });
+      setRestaurant(savedRestaurant);
+      setOwnerMessage(json?.message ?? "Restaurante guardado en la API.");
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      setOwnerMessage(error instanceof Error ? error.message : "No se pudo guardar el restaurante en la API.");
+    }
   }
 
   function handleCreateRestaurant() {
     setRestaurant({
+      id: undefined,
       name: "",
       category: "Italiana",
       phone: "",
@@ -187,6 +323,7 @@ export default function ProfilePage() {
 
   function handleEditRestaurant(item: RestaurantRow) {
     setRestaurant({
+      id: item.id,
       name: item.name,
       category: item.category,
       phone: item.phone,
@@ -199,9 +336,25 @@ export default function ProfilePage() {
     setOwnerMessage(`Editando ${item.name}. Guarda los cambios cuando termines.`);
   }
 
-  function handleDeleteRestaurant(name: string) {
-    setRestaurantRows((current) => current.filter((item) => item.name !== name));
-    setOwnerMessage("Restaurante eliminado de esta vista de perfil.");
+  async function handleDeleteRestaurant(restaurantToDelete: RestaurantRow) {
+    if (!restaurantToDelete.id) {
+      setRestaurantRows((current) => current.filter((item) => item.name !== restaurantToDelete.name));
+      setOwnerMessage("Restaurante eliminado de esta vista de perfil.");
+      return;
+    }
+
+    if (!token) {
+      setOwnerMessage("No hay token de sesion para eliminar el restaurante en la API.");
+      return;
+    }
+
+    try {
+      const json = await apiRequest(`/api/restaurants/${restaurantToDelete.id}`, token, { method: "DELETE" });
+      setRestaurantRows((current) => current.filter((item) => item.id !== restaurantToDelete.id));
+      setOwnerMessage(json?.message ?? "Restaurante eliminado correctamente.");
+    } catch (error) {
+      setOwnerMessage(error instanceof Error ? error.message : "No se pudo eliminar el restaurante en la API.");
+    }
   }
 
   function handleLogout() {
@@ -217,14 +370,14 @@ export default function ProfilePage() {
 
   const stats = userView.isOwner
     ? [
-        { label: "Restaurantes", value: "1", tone: "text-amber-400" },
-        { label: "Pendientes", value: "1", tone: "text-sky-400" },
-        { label: "Reservas hoy", value: "12", tone: "text-emerald-400" },
+        { label: "Restaurantes", value: String(restaurantRows.length), tone: "text-amber-400" },
+        { label: "Pendientes", value: String(restaurantRows.filter((item) => item.status === "Pendiente").length), tone: "text-sky-400" },
+        { label: "Aprobados", value: String(restaurantRows.filter((item) => item.status === "Aprobado").length), tone: "text-emerald-400" },
       ]
     : [
-        { label: "Reservas", value: "2", tone: "text-emerald-400" },
+        { label: "Reservas", value: String(reservations.length), tone: "text-emerald-400" },
         { label: "Favoritos", value: String(favoriteCategories.length), tone: "text-amber-400" },
-        { label: "Pendientes", value: "1", tone: "text-sky-400" },
+        { label: "Pendientes", value: String(reservations.filter((item) => mapReservationStatus(item.status) === "Pendiente").length), tone: "text-sky-400" },
       ];
 
   return (
@@ -337,6 +490,12 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {(loadingApi || apiMessage) && (
+            <div className="rounded-lg border border-sky-800/40 bg-sky-950/30 px-4 py-3 text-sm text-sky-200">
+              {loadingApi ? "Conectando perfil con la API..." : apiMessage}
+            </div>
+          )}
+
           <section className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <PersonalInfoCard
               email={userView.email}
@@ -364,7 +523,7 @@ export default function ProfilePage() {
               onDelete={handleDeleteRestaurant}
             />
           ) : (
-            <ClientActivityPanel favoriteCategories={favoriteCategories} />
+            <ClientActivityPanel favoriteCategories={favoriteCategories} reservations={reservations} />
           )}
         </div>
       </div>
@@ -415,6 +574,13 @@ function PersonalInfoCard({
             className="w-full rounded-lg border border-[#2d180d] bg-[#120904] px-3 py-2.5 text-xs text-stone-500"
           />
         </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ProfileInput name="password" label="Nueva contrasena" defaultValue="" type="password" />
+          <ProfileInput name="confirmPassword" label="Confirmar contrasena" defaultValue="" type="password" />
+        </div>
+        <p className="text-[11px] leading-5 text-stone-500">
+          La API del backend requiere nueva contrasena y confirmacion para guardar cambios de perfil.
+        </p>
         <button
           type="submit"
           className="w-full rounded-lg bg-amber-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-neutral-950 transition hover:bg-amber-400"
@@ -575,7 +741,7 @@ function OwnerManagementPanel({
   restaurants: RestaurantRow[];
   onCreate: () => void;
   onEdit: (restaurant: RestaurantRow) => void;
-  onDelete: (name: string) => void;
+  onDelete: (restaurant: RestaurantRow) => void;
 }) {
   return (
     <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
@@ -630,7 +796,7 @@ function OwnerManagementPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onDelete(restaurant.name)}
+                      onClick={() => onDelete(restaurant)}
                       className="rounded border border-red-900/70 px-3 py-2 text-xs text-red-300 hover:border-red-500"
                     >
                       Eliminar
@@ -652,7 +818,13 @@ function OwnerManagementPanel({
   );
 }
 
-function ClientActivityPanel({ favoriteCategories }: { favoriteCategories: string[] }) {
+function ClientActivityPanel({
+  favoriteCategories,
+  reservations,
+}: {
+  favoriteCategories: string[];
+  reservations: ReservationItem[];
+}) {
   const recommendedRestaurants = [
     {
       name: "Bella Italia Trattoria",
@@ -674,17 +846,32 @@ function ClientActivityPanel({ favoriteCategories }: { favoriteCategories: strin
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <ClientStatus title="Confirmadas" value="1" tone="text-emerald-400" />
-        <ClientStatus title="Pendientes" value="1" tone="text-amber-400" />
-        <ClientStatus title="Canceladas" value="0" tone="text-stone-500" />
+        <ClientStatus title="Confirmadas" value={String(reservations.filter((item) => mapReservationStatus(item.status) === "Confirmada").length)} tone="text-emerald-400" />
+        <ClientStatus title="Pendientes" value={String(reservations.filter((item) => mapReservationStatus(item.status) === "Pendiente").length)} tone="text-amber-400" />
+        <ClientStatus title="Canceladas" value={String(reservations.filter((item) => mapReservationStatus(item.status) === "Cancelada").length)} tone="text-stone-500" />
       </div>
 
-      <div className="mt-5 rounded-xl border border-[#2d180d] bg-[#120904] p-5 text-center">
-        <p className="text-sm font-semibold text-stone-200">Aun no hay reservas cargadas desde el sistema.</p>
-        <p className="mt-2 text-xs leading-5 text-stone-500">
-          Cuando el modulo de reservas este conectado, aqui apareceran restaurantes, fechas, horas y estados.
-        </p>
-      </div>
+      {reservations.length === 0 ? (
+        <div className="mt-5 rounded-xl border border-[#2d180d] bg-[#120904] p-5 text-center">
+          <p className="text-sm font-semibold text-stone-200">Aun no hay reservas cargadas desde la API.</p>
+          <p className="mt-2 text-xs leading-5 text-stone-500">
+            Cuando existan reservas para este cliente, aqui apareceran fechas, mesas, personas y estados.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5 overflow-hidden rounded-xl border border-[#2d180d]">
+          <div className="divide-y divide-[#2d180d]">
+            {reservations.slice(0, 4).map((reservation) => (
+              <div key={reservation.id} className="grid gap-px bg-[#2d180d] md:grid-cols-4">
+                <TableCell label="Restaurante" value={`ID ${reservation.restaurantId ?? "-"}`} helper={`Mesa ${reservation.numberMesa ?? reservation.tableId ?? "-"}`} />
+                <TableCell label="Fecha" value={formatReservationDate(reservation.dateTimeReservation)} />
+                <TableCell label="Personas" value={String(reservation.peopleCount ?? "-")} />
+                <TableCell label="Estado" value={mapReservationStatus(reservation.status)} tone="text-amber-400" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {recommendedRestaurants.map((restaurant) => (
@@ -741,15 +928,18 @@ function ProfileInput({
   name,
   label,
   defaultValue,
+  type = "text",
 }: {
   name: string;
   label: string;
   defaultValue: string;
+  type?: string;
 }) {
   return (
     <label className="block space-y-1">
       <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#fbbf24]">{label}</span>
       <input
+        type={type}
         name={name}
         defaultValue={defaultValue}
         className="w-full rounded-lg border border-[#2d180d] bg-[#120904] px-3 py-2.5 text-xs text-stone-200 outline-none transition focus:border-amber-500"
@@ -810,4 +1000,87 @@ function ClientStatus({ title, value, tone }: { title: string; value: string; to
       <p className={`mt-2 font-mono text-2xl font-bold ${tone}`}>{value}</p>
     </div>
   );
+}
+
+async function apiRequest(endpoint: string, token: string, options: RequestInit = {}) {
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const text = await response.text();
+  const json = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    throw new Error(json?.error?.message ?? json?.message ?? "La API no pudo procesar la solicitud.");
+  }
+
+  return json;
+}
+
+function mapRestaurantFromApi(item: any): RestaurantRow {
+  const images = item?.images ?? item?.Images ?? [];
+  const image = Array.isArray(images) && images.length > 0 ? images[0] : imagePresets[0].url;
+
+  return {
+    id: item?.id ?? item?.Id,
+    name: item?.name ?? item?.Name ?? "",
+    category: item?.category ?? item?.Category ?? "Italiana",
+    phone: item?.phoneNumber ?? item?.PhoneNumber ?? "",
+    address: item?.address ?? item?.Address ?? "",
+    hours: "Horario pendiente",
+    capacity: "Capacidad pendiente",
+    image,
+    description: "Restaurante registrado en la API de TableUp.",
+    status: mapRestaurantStatus(item?.status ?? item?.Status),
+    updatedAt: formatApiDate(item?.createdAt ?? item?.CreatedAt),
+  };
+}
+
+function mapRestaurantStatus(status: string | number | undefined): RestaurantRow["status"] {
+  const value = String(status ?? "").toLowerCase();
+
+  if (value === "1" || value.includes("approved") || value.includes("aprob")) return "Aprobado";
+  if (value === "2" || value.includes("rejected") || value.includes("rechaz")) return "Borrador";
+
+  return "Pendiente";
+}
+
+function mapReservationStatus(status: string | number | undefined) {
+  const value = String(status ?? "").toLowerCase();
+
+  if (value === "1" || value.includes("confirm")) return "Confirmada";
+  if (value === "2" || value.includes("cancel")) return "Cancelada";
+
+  return "Pendiente";
+}
+
+function formatApiDate(value: string | undefined) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
+  return date.toLocaleDateString("es-DO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatReservationDate(value: string | undefined) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
+  return date.toLocaleString("es-DO", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
