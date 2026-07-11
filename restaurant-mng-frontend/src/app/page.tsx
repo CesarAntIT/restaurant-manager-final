@@ -79,7 +79,7 @@ export default function Home() {
           status: "Approved",
           address: "Paseo del Prado 8, Sevilla, España",
           phoneNumber: "+34 954 987 321",
-          images: ["/home_bg.png"],
+          images: ["/home_bg2.png"],
           cuisine: "Contemporánea",
           city: "Sevilla",
           priceRange: 80,
@@ -88,9 +88,10 @@ export default function Home() {
 
       setRestaurants(testRestaurants);
       return;
-      */
+       //<-- */
 
       //COMENTAR DE AQUÍ HASTA LA "<--" PARA USAR RESTAURANTES FALSOS
+      
       const res = await fetch(`${API_URL}/api/restaurants`);
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
@@ -111,7 +112,7 @@ export default function Home() {
           city: restaurant.city || extractCity(restaurant.address),
         }))
       );
-      // <--
+      // <-- 
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -171,7 +172,7 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden text-white">
       <div
         className="pointer-events-none fixed inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/home_bg.png')" }}
+        style={{ backgroundImage: "url('/home_bg2.png')" }}
       />
       <div className="pointer-events-none fixed inset-0 bg-black/70" />
 
@@ -282,14 +283,18 @@ export default function Home() {
             {filteredRestaurants.map((restaurant) => (
               <article key={restaurant.id} className="group overflow-hidden rounded-[2rem] border border-[#5b3f2a]/20 bg-[#1d1208]/85 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:bg-[#2e1a0f]/95">
                 <div className="relative h-48 overflow-hidden bg-[#1d1208]">
-                  <img
-                    src={restaurant.images && restaurant.images.length > 0 ? restaurant.images[0] : "/home_bg.png"}
-                    alt={restaurant.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  <Link href={`/restaurant/${restaurant.id}`} className="block h-full w-full">
+                    <img
+                      src={restaurant.images && restaurant.images.length > 0 ? restaurant.images[0] : "/home_bg.png"}
+                      alt={restaurant.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </Link>
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1a1209]/95 via-[#331f13]/85 to-transparent p-4 text-white">
                     <p className="text-sm uppercase tracking-[0.25em] text-amber-300">{restaurant.category}</p>
-                    <h3 className="text-xl font-semibold">{restaurant.name}</h3>
+                    <h3 className="text-xl font-semibold">
+                      <Link href={`/restaurant/${restaurant.id}`} className="hover:underline">{restaurant.name}</Link>
+                    </h3>
                   </div>
                 </div>
                 <div className="space-y-4 rounded-[1.5rem] bg-[#2f1f12]/95 p-5 shadow-inner shadow-[#1a1209]/40">
