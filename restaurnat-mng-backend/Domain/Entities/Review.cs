@@ -1,4 +1,5 @@
 ﻿using Domain.Common.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Entities
 {
@@ -12,6 +13,7 @@ namespace Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // nav property
+        [ForeignKey("RestaurantId")]
         public Restaurant? Restaurant { get; set; }
     }
 }
