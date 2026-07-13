@@ -116,7 +116,7 @@ namespace TableUpApi.Controllers
 
             try
             {
-   
+
                 var userId = User.FindFirst("uid")?.Value;
 
                 if (string.IsNullOrEmpty(userId))
@@ -217,5 +217,64 @@ namespace TableUpApi.Controllers
                 });
             }
         }
+
+        /// <summary>
+        /// Obtiene todas las reseñas de un restaurante.
+        /// </summary>
+        /// <param name="restaurantId">Id del restaurante.</param>
+        /// <returns>Listado de reseñas del restaurante.</returns>
+        [HttpGet("restaurant/{restaurantId}")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Obtener reseñas de un restaurante",
+            Description = "Permite consultar las reseñas públicas de un restaurante, incluyendo nombre del usuario, calificación, comentario y fecha de creación."
+        )]
+        public async Task<IActionResult> GetReviewsByRestaurant(int restaurantId)
+        {
+            var traceId = $"00-get-restaurant-reviews-{Guid.NewGuid()}";
+
+            try
+            {
+                var result = await _reviewService.GetReviewsByRestaurantAsync(restaurantId);
+
+                if (result == null)
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "REVIEWS_NOT_FOUND",
+                            message = "No se encontraron reseñas para el restaurante especificado.",
+                            traceId = traceId
+                        }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Reseñas obtenidas exitosamente.",
+                    data = result
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new
+                    {
+                        code = "INTERNAL_SERVER_ERROR",
+                        message = "Ocurrió un error inesperado al obtener las reseñas.",
+                        traceId = traceId
+                    }
+                });
+            }
+        }
+
     }
 }

@@ -9,5 +9,8 @@ namespace Domain.Interfaces
 
         // Obtener las reseñas hechas por un usuario incluyendo los datos del restaurante
         Task<List<Review>> GetByUserIdWithRestaurantAsync(string userId);
+
+        Task<List<Review>> GetByRestaurantIdWithRestaurantAsync(int restaurantId);
+
     }
 }

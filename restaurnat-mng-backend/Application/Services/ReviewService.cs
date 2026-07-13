@@ -10,17 +10,19 @@ namespace Application.Services
     public class ReviewService : IReviewService
     {
         private readonly IReviewRepository _reviewRepository;
+        private readonly IUserAccountServiceForWebApi _userAccountService;
 
-        public ReviewService(IReviewRepository reviewRepository)
+        public ReviewService(IReviewRepository reviewRepository, IUserAccountServiceForWebApi userAccountService)
         {
             _reviewRepository = reviewRepository;
+            _userAccountService = userAccountService;
         }
 
         public async Task<bool> AddAsync(CreateReviewDto dto, string userId)
         {
             var review = new Review
             {
-                Id= 0, 
+                Id = 0,
                 UserId = userId,
                 RestaurantId = dto.RestaurantId,
                 Rating = dto.Rating,
@@ -59,6 +61,39 @@ namespace Application.Services
 
             await _reviewRepository.DeleteAsync(id);
             return true;
+        }
+
+        public async Task<RestaurantReviewsDto?> GetReviewsByRestaurantAsync(int restaurantId)
+        {
+            var reviews = await _reviewRepository
+                .GetByRestaurantIdWithRestaurantAsync(restaurantId);
+
+            if (!reviews.Any())
+                return null;
+
+            var reviewItems = new List<ReviewItemDto>();
+
+            foreach (var review in reviews)
+            {
+                var user = await _userAccountService.GetUserById(review.UserId);
+
+                reviewItems.Add(new ReviewItemDto
+                {
+                    UserName = user?.Name ?? "Usuario desconocido",
+                    Rating = review.Rating,
+                    Comment = review.Comment,
+                    CreatedAt = review.CreatedAt
+                });
+            }
+
+            return new RestaurantReviewsDto
+            {
+                RestaurantId = restaurantId,
+                RestaurantName = reviews.First().Restaurant?.Name ?? string.Empty,
+                AverageRating = Math.Round((decimal)reviews.Average(x => x.Rating), 1),
+                TotalReviews = reviews.Count,
+                Reviews = reviewItems
+            };
         }
     }
 

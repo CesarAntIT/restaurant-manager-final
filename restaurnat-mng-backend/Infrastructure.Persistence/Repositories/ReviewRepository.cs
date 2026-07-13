@@ -27,5 +27,24 @@ namespace Infrastructure.Persistence.Repositories
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
         }
+
+        public async Task<List<Review>> GetByRestaurantIdWithRestaurantAsync(int restaurantId)
+        {
+            var result = await context.Set<Review>()
+                .AsNoTracking()
+                .Include(r => r.Restaurant)
+                .Where(r => r.RestaurantId == restaurantId)
+                .ToListAsync();
+
+            var first = result.FirstOrDefault();
+
+            Console.WriteLine($"RestaurantId: {first?.RestaurantId}");
+            Console.WriteLine($"Restaurant null?: {first?.Restaurant == null}");
+            Console.WriteLine($"Restaurant Name: {first?.Restaurant?.Name}");
+
+            return result;
+        }
+
+
     }
 }
