@@ -17,6 +17,7 @@ import {
   mapReservationStatus,
   useProfileSession,
 } from "../_shared";
+import ProfileReviews from "./_profileReviews";
 
 export default function ClientProfilePage() {
   const {
@@ -36,6 +37,7 @@ export default function ClientProfilePage() {
 
   const [saved, setSaved] = useState(false);
   const [toEdit, setToEdit] = useState(false);
+  const [myReviews, setMyReviews] = useState([]);
   const [favoriteCategories, setFavoriteCategories] = useState([
     "Italiana",
     "Postres",
@@ -55,6 +57,33 @@ export default function ClientProfilePage() {
 
     const controller = new AbortController();
 
+    async function GetMyReviews() {
+      setLoadingApi(true);
+      setApiMessage("");
+
+      try {
+        const res = await apiRequest(
+          "/api/reviews/my-history",
+          token as string,
+          {
+            signal: controller.signal,
+          },
+        );
+        setMyReviews(res.data);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setApiMessage(
+            error instanceof Error
+              ? error.message
+              : "No se pudo conectar el perfil con la API.",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingApi(false);
+        }
+      }
+    }
     async function loadReservations() {
       setLoadingApi(true);
       setApiMessage("");
@@ -85,6 +114,7 @@ export default function ClientProfilePage() {
       }
     }
 
+    GetMyReviews();
     loadReservations();
 
     return () => controller.abort();
@@ -200,6 +230,23 @@ export default function ClientProfilePage() {
             favoriteCategories={favoriteCategories}
             reservations={reservations}
           />
+
+          <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
+            <div className="mb-5 border-b border-[#2d180d]/70 pb-4">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#d97706]">
+                      Historial de Reseñas realizadas
+                    </p>
+                    <h2 className="mt-1 text-2xl font-bold text-white">
+                Mis reseñas
+              </h2>            
+            </div>
+
+            <ul className="max-h-75 overflow-y-auto divide-y divide-[#2d180d]/70 rounded-md border border-[#2d180d]/70 bg-[#120a05]">
+              {myReviews.map((r, i) => (
+                <ProfileReviews key={i} r={r} />
+              ))}
+            </ul>
+          </section>
         </div>
       </div>
     </main>
