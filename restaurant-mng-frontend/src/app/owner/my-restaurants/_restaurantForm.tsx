@@ -12,7 +12,7 @@ export default function RestaurantForm({
 }: RestaurantFormProps) {
   const isEdit = mode === "edit";
   const MAX_IMAGES = 4;
-  
+
   //Used to create the form
   const [formData, setFormData] = useState({
     name: restaurant?.name ?? "",

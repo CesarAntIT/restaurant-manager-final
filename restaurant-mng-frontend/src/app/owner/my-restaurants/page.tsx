@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import RestaurantForm from "./RestaurantForm";
+import RestaurantForm from "./_restaurantForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
