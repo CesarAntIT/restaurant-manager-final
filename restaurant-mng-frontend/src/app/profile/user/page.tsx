@@ -241,7 +241,7 @@ export default function ClientProfilePage() {
               </h2>            
             </div>
 
-            <ul className="max-h-75 overflow-y-auto divide-y divide-[#2d180d]/70 rounded-md border border-[#2d180d]/70 bg-[#120a05]">
+            <ul className="max-h-1/3 overflow-y-auto divide-y divide-[#2d180d]/70 rounded-md border border-[#2d180d]/70 bg-[#120a05]">
               {myReviews.map((r, i) => (
                 <ProfileReviews key={i} r={r} />
               ))}

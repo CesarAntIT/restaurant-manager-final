@@ -20,12 +20,17 @@ export default function ProfileReviews({ r }: { r: Reviews }) {
   return (
     <li className="m-6 mt-7">
       <div className="flex justify-between">
-        <Link
-          href={`/restaurants/${r.restaurantId}`}
-          className="font-bold text-2xl italic text-white"
-        >
-          {r.restaurantName}
-        </Link>
+        <div>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#d97706]">
+            Restaurante
+          </p>
+          <Link
+            href={`/restaurants/${r.restaurantId}`}
+            className="font-bold text-2xl italic text-white"
+          >
+            {r.restaurantName}
+          </Link>
+        </div>
 
         <div>
           <h4 className="italic font-mono">
@@ -40,16 +45,18 @@ export default function ProfileReviews({ r }: { r: Reviews }) {
         Rating: {Array.from({ length: r.rating }).map((_, i) => "\u2605")}
       </h3>
       <p
-        className={`wrap-break-word ${showComment ? "" : "line-clamp-2"} max-w-150 mt-5 ml-0.5`}
+        className={`wrap-break-word ${showComment ? "mb-7" : "line-clamp-2"} mb-3 max-w-150 mt-5 ml-0.5`}
       >
         {r.comment}
       </p>
-      <button
-        className="hover:bg-white/10 p-1 pl-2 pr-2 mb-1 rounded-xl italic "
-        onClick={() => setShowComment(!showComment)}
-      >
-        {showComment ? "Show Less" : "Show More"}
-      </button>
+      {r.comment.length < 125 ? null : (
+        <button
+          className="hover:bg-white/10 p-1 pl-2 pr-2 mb-1 rounded-xl italic "
+          onClick={() => setShowComment(!showComment)}
+        >
+          {showComment ? "Show Less" : "Show More"}
+        </button>
+      )}
     </li>
   );
 }
