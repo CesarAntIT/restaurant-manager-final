@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/authStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -24,7 +25,8 @@ type Restaurant = {
 };
 
 export default function Home() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const router = useRouter();
   const isAdmin = Boolean(user && (user.role === "Admin" || user.isAdmin));
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -37,8 +39,13 @@ export default function Home() {
   const [cityFilter, setCityFilter] = useState("");
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/unauthorized");
+      return;
+    }
+
     fetchRestaurants();
-  }, []);
+  }, [isAuthenticated, router]);
 
   async function fetchRestaurants() {
     try {

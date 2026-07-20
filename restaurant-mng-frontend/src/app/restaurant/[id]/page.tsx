@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
 type Review = {
   id: number;
@@ -12,6 +15,12 @@ type Review = {
   service: number;
   personal: number;
   comment?: string;
+  userId?: string | number | null;
+  user?: {
+    id?: string | number | null;
+    name?: string;
+    email?: string;
+  } | null;
 };
 
 function computeStars(r: Review) {
@@ -42,12 +51,9 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
       "Ven a deleitar tus papilas gustativas con la epítome de las delicias: comida Italiana moderna con técnicas clásicas y producto local.",
   };
 
-  const [reviews, setReviews] = useState<Review[]>([
-    { id: 1, author: "Jessica", date: "2026-05-30", food: 4, ambience: 5, service: 4, personal: 4, comment: "Buen lugar, lo recomiendo." },
-    { id: 2, author: "Jose", date: "2026-04-16", food: 5, ambience: 5, service: 5, personal: 5, comment: "Excelente experiencia." },
-    { id: 3, author: "Anabel", date: "2026-04-08", food: 5, ambience: 4, service: 5, personal: 5, comment: "Gran servicio y ambiente." },
-    { id: 4, author: "Carlos", date: "2026-06-02", food: 2, ambience: 2, service: 3, personal: 2, comment: "No fue lo esperado." },
-  ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
 
   const [filter, setFilter] = useState("all");
 
@@ -56,6 +62,13 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
   const [service, setService] = useState(5);
   const [personal, setPersonal] = useState(5);
   const [comment, setComment] = useState("");
+  const token = useAuthStore((state: any) => state.token);
+  const currentUser = useAuthStore((state: any) => state.user);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
 
   const computedStars = useMemo(() => {
     return reviews.map((r) => ({ ...r, stars: computeStars(r) }));
@@ -93,19 +106,168 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
     return list;
   }, [computedStars, filter]);
 
-  function submitReview() {
-    const next: Review = {
-      id: Date.now(),
-      author: "Usuario",
-      date: new Date().toISOString().slice(0, 10),
-      food,
-      ambience,
-      service,
-      personal,
-      comment,
-    };
-    setReviews((s) => [next, ...s]);
-    setComment("");
+  const isAdmin = Boolean(
+    currentUser && (
+      currentUser.role === "Admin" ||
+      currentUser.Role === "Admin" ||
+      currentUser.isAdmin === true ||
+      currentUser.isAdmin === "true"
+    )
+  );
+
+  function canDeleteReview(review: Review) {
+    if (!currentUser) return false;
+    if (isAdmin) return true;
+
+    const currentUserId = currentUser.id ?? currentUser.userId ?? currentUser.UserId;
+    const reviewUserId = review.userId ?? review.user?.id;
+    if (currentUserId && reviewUserId && String(currentUserId) === String(reviewUserId)) {
+      return true;
+    }
+
+    const currentEmail = currentUser.email ?? currentUser.username ?? currentUser.userName;
+    const reviewEmail = review.user?.email;
+    if (currentEmail && reviewEmail && String(currentEmail).toLowerCase() === String(reviewEmail).toLowerCase()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async function loadReviews() {
+    try {
+      setIsLoadingReviews(true);
+      setReviewsError(null);
+
+      const response = await fetch(`${API_URL}/api/reviews/restaurant/${id}`, {
+        headers: {
+          accept: "*/*",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudieron cargar las reseñas.");
+      }
+
+      const payload = await response.json();
+      const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.reviews ?? [];
+
+      const mappedReviews: Review[] = list.map((item: any, index: number) => {
+        const baseRating = typeof item.rating === "number" ? item.rating : 5;
+        const food = item.food ?? item.foodRating ?? baseRating;
+        const ambience = item.ambience ?? item.ambienceRating ?? baseRating;
+        const service = item.service ?? item.serviceRating ?? baseRating;
+        const personal = item.personal ?? item.personalRating ?? baseRating;
+        const rawDate = item.createdAt ?? item.date ?? item.updatedAt ?? new Date().toISOString();
+
+        return {
+          id: item.id ?? index + 1,
+          author: item.author ?? item.userName ?? item.user?.name ?? item.customerName ?? "Usuario",
+          date: rawDate ? new Date(rawDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+          food,
+          ambience,
+          service,
+          personal,
+          comment: item.comment ?? item.text ?? "",
+          userId: item.userId ?? item.user?.id ?? item.customerId ?? null,
+          user: item.user ? {
+            id: item.user.id ?? item.user.userId ?? null,
+            name: item.user.name ?? item.user.fullName ?? null,
+            email: item.user.email ?? item.user.mail ?? null,
+          } : null,
+        };
+      });
+
+      setReviews(mappedReviews);
+    } catch (error) {
+      setReviewsError(error instanceof Error ? error.message : "No se pudieron cargar las reseñas.");
+      setReviews([]);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadReviews();
+  }, [id]);
+
+  async function deleteReview(reviewId: number) {
+    if (!token) {
+      setDeleteMessage("Debes iniciar sesión para eliminar una reseña.");
+      return;
+    }
+
+    setDeletingReviewId(reviewId);
+    setDeleteMessage(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: {
+          accept: "*/*",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "No se pudo eliminar la reseña.");
+      }
+
+      await loadReviews();
+      setDeleteMessage("Reseña eliminada correctamente.");
+    } catch (error) {
+      setDeleteMessage(error instanceof Error ? error.message : "No se pudo eliminar la reseña.");
+    } finally {
+      setDeletingReviewId(null);
+    }
+  }
+
+  async function submitReview() {
+    if (!comment.trim()) {
+      setSubmitError("Escribe un comentario antes de enviar la reseña.");
+      return;
+    }
+
+    if (!token) {
+      setSubmitError("Debes iniciar sesión para enviar una reseña.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    const rating = Math.max(1, Math.min(5, Math.round((food + ambience + service + personal) / 4)));
+
+    try {
+      const response = await fetch(`${API_URL}/api/reviews`, {
+        method: "POST",
+        headers: {
+          accept: "*/*",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          restaurantId: Number(id),
+          rating,
+          comment: comment.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "No se pudo enviar la reseña.");
+      }
+
+      setComment("");
+      await loadReviews();
+      setSubmitSuccess(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "No se pudo enviar la reseña.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -181,9 +343,15 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
                 </div>
 
                 <div className="mt-6 space-y-4">
+                  {isLoadingReviews && <p className="text-sm text-stone-300">Cargando reseñas...</p>}
+                  {!isLoadingReviews && reviewsError && <p className="text-sm text-red-300">{reviewsError}</p>}
+                  {deleteMessage && <p className="text-sm text-amber-200">{deleteMessage}</p>}
+                  {!isLoadingReviews && !reviewsError && filtered.length === 0 && (
+                    <p className="text-sm text-stone-300">Aún no hay reseñas para este restaurante.</p>
+                  )}
                   {filtered.map((r) => (
                     <div key={r.id} className="rounded-xl bg-[#1d1208]/60 p-4">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold">{r.author}</div>
                           <div className="text-xs text-stone-300">{r.date} · {computeStars(r)} ★</div>
@@ -191,6 +359,18 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
                         <div className="text-sm text-stone-300">Food {r.food} · Amb {r.ambience} · Ser {r.service} · You {r.personal}</div>
                       </div>
                       {r.comment && <p className="mt-3 text-sm text-stone-200">{r.comment}</p>}
+                      {canDeleteReview(r) && (
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => deleteReview(r.id)}
+                            disabled={deletingReviewId === r.id}
+                            className="rounded-full border border-red-400/40 px-3 py-1 text-xs font-semibold text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingReviewId === r.id ? "Eliminando..." : "Eliminar"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -241,10 +421,14 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
                 <label className="block text-sm text-stone-300">Comment</label>
                 <textarea value={comment} onChange={(e)=>setComment(e.target.value)} className="mt-2 w-full rounded-lg bg-white/5 p-3 text-sm" rows={4} />
               </div>
+              {submitError && <p className="mt-3 text-sm text-red-300">{submitError}</p>}
+              {submitSuccess && <p className="mt-3 text-sm text-emerald-300">Reseña enviada correctamente.</p>}
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm" style={{ color: previewColor.text }}>Preview: {Math.round(((food+ambience+service+personal)/4)*10)/10} ★</div>
                 <div className="flex gap-2">
-                  <button onClick={submitReview} className="rounded-3xl bg-amber-400 px-4 py-2 font-semibold text-stone-900">Submit review</button>
+                  <button onClick={submitReview} disabled={isSubmitting} className="rounded-3xl bg-amber-400 px-4 py-2 font-semibold text-stone-900 disabled:cursor-not-allowed disabled:opacity-70">
+                    {isSubmitting ? "Enviando..." : "Submit review"}
+                  </button>
                   <Link href="/" className="rounded-3xl bg-white/5 px-4 py-2">Back</Link>
                 </div>
               </div>
