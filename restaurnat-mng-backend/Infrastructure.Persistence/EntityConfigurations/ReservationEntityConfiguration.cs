@@ -20,10 +20,10 @@ namespace Infrastructure.Persistence.EntityConfigurations
                 .HasMaxLength(30)
                 .IsRequired();
 
-            builder.HasOne<Table>()
-                   .WithMany()
-                   .HasForeignKey(r => r.TableId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(r => r.Table)
+                    .WithMany()
+                    .HasForeignKey(r => r.TableId)
+                    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

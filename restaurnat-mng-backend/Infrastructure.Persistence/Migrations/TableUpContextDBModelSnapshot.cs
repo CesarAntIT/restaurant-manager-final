@@ -221,9 +221,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("TableId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("TableId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -232,8 +229,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TableId");
-
-                    b.HasIndex("TableId1");
 
                     b.ToTable("Reservations", (string)null);
                 });
@@ -271,6 +266,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("PromedioRating")
+                        .HasColumnType("numeric");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -362,9 +360,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("RestaurantId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RestaurantId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Seats")
                         .HasColumnType("integer");
 
@@ -374,8 +369,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("RestaurantId");
-
-                    b.HasIndex("RestaurantId1");
 
                     b.ToTable("Tables", (string)null);
                 });
@@ -525,15 +518,11 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Reservation", b =>
                 {
-                    b.HasOne("Domain.Entities.Table", null)
+                    b.HasOne("Domain.Entities.Table", "Table")
                         .WithMany()
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Domain.Entities.Table", "Table")
-                        .WithMany()
-                        .HasForeignKey("TableId1");
 
                     b.Navigation("Table");
                 });
@@ -566,15 +555,11 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Table", b =>
                 {
-                    b.HasOne("Domain.Entities.Restaurant", null)
+                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
                         .WithMany("Tables")
                         .HasForeignKey("RestaurantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
-                        .WithMany()
-                        .HasForeignKey("RestaurantId1");
 
                     b.Navigation("Restaurant");
                 });
