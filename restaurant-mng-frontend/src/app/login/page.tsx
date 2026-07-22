@@ -16,13 +16,13 @@ export default function LoginPage() {
 
   const router = useRouter();
   const login = useAuthStore((state: any) => state.login);
-  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
+  const checkSession = useAuthStore((state: any) => state.checkSession);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (checkSession()) {
       router.replace('/');
     }
-  }, [isAuthenticated, router]);
+  }, [checkSession, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
       const { accessToken, expiresIn, user } = json.data;
 
-      login(user, accessToken);
+      login(user, accessToken, expiresIn);
       localStorage.setItem('tableup_token_type', 'Bearer');
       localStorage.setItem('tableup_expires_in', String(expiresIn));
       if (remember) sessionStorage.setItem('tableup_remember', 'true');

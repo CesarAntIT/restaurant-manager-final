@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
@@ -23,6 +23,15 @@ type Review = {
   } | null;
 };
 
+type Restaurant = {
+  id: number,
+  name: string,
+  category: string,
+  address: string,
+  images: [],
+  description: string
+}
+
 function computeStars(r: Review) {
   const avg = (r.food + r.ambience + r.service + r.personal) / 4;
   return Math.round(avg * 10) / 10;
@@ -38,18 +47,11 @@ function getColorForScore(score: number) {
   return { bg: "#7f1d1d", text: "#fee2e2" };
 }
 
-export default function RestaurantDetail({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function RestaurantDetail({ params }) {
+  const { id } = use(params);
 
-  const restaurant = {
-    id: Number(id),
-    name: "Restaurante Esencia",
-    category: "Restaurante Italiano",
-    address: "Calle Mayor 125, Madrid, España",
-    images: ["/home_bg.png", "/restaurant_bg.jpg"],
-    description:
-      "Ven a deleitar tus papilas gustativas con la epítome de las delicias: comida Italiana moderna con técnicas clásicas y producto local.",
-  };
+
+  const [restaurant, setRestaurant] = useState<Restaurant|null>(null);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
@@ -115,6 +117,23 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
     )
   );
 
+  async function LoadRestaurant() {
+    try {
+      const res = await fetch(`${API_URL}/api/restaurants/${id}`)
+      const resjson = await res.json()
+      if (resjson.success != true) {
+        console.error(resjson.error.code + '/n' + resjson.error.message)
+      }
+
+      const data = resjson.data
+      setRestaurant(data)
+      console.log(data)
+
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   function canDeleteReview(review: Review) {
     if (!currentUser) return false;
     if (isAdmin) return true;
@@ -150,9 +169,9 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
       }
 
       const payload = await response.json();
-      const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.reviews ?? [];
+      // const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.reviews ?? [];
 
-      const mappedReviews: Review[] = list.map((item: any, index: number) => {
+      const mappedReviews: Review[] = payload.data.reviews.map((item: any, index: number) => {
         const baseRating = typeof item.rating === "number" ? item.rating : 5;
         const food = item.food ?? item.foodRating ?? baseRating;
         const ambience = item.ambience ?? item.ambienceRating ?? baseRating;
@@ -188,7 +207,8 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
   }
 
   useEffect(() => {
-    void loadReviews();
+    LoadRestaurant();
+    loadReviews();
   }, [id]);
 
   async function deleteReview(reviewId: number) {
@@ -270,9 +290,17 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
     }
   }
 
+  if (!restaurant) {
+    return (
+      <main className="min-h-screen bg-[#0f0b07] text-white flex items-center justify-center">
+        <p>Loading restaurant...</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0f0b07] text-white">
-      <div className="bg-cover bg-center" style={{ backgroundImage: `url('${restaurant.images[0]}')`, height: 260 }} />
+      <div className="bg-cover bg-center" style={{ backgroundImage: `url('${API_URL}${restaurant.images[0]}')`, height: 260 }} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8 flex items-start gap-6">
           <div className="flex-1">
@@ -300,7 +328,7 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
               <p className="text-sm text-stone-300">{restaurant.description}</p>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {restaurant.images.map((src, i) => (
-                  <img key={i} src={src} alt={`${restaurant.name}-${i}`} className="h-28 w-full rounded-lg object-cover" />
+                  <img key={i} src={API_URL + src} alt={`${restaurant.name}-${i}`} className="h-28 w-full rounded-lg object-cover" />
                 ))}
               </div>
             </div>
@@ -443,7 +471,7 @@ export default function RestaurantDetail({ params }: { params: { id: string } })
             <div className="rounded-2xl bg-[#2f1f12]/40 p-6">
               <h4 className="text-sm font-semibold text-amber-200">Photos</h4>
               <div className="mt-3 grid grid-cols-1 gap-2">
-                {restaurant.images.map((s,i)=>(<img key={i} src={s} className="h-20 w-full rounded-md object-cover" alt="photo"/>))}
+                {restaurant.images.map((s, i) => (<img key={i} src={`${API_URL}${s}`} className="h-20 w-full rounded-md object-cover" alt="photo"/>))}
               </div>
             </div>
           </aside>

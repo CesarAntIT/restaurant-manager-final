@@ -3,15 +3,17 @@ import { persist } from 'zustand/middleware';
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set,get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
+      expiresAt: null,
 
-      login: (userData, token) => set({
+      login: (userData, token, expiresIn) => set({
         user: userData,
         token: token,
-        isAuthenticated: true
+        isAuthenticated: true,
+        expiresAt: expiresIn ? Date.now() + expiresIn*1000 : null
       }),
 
       updateUser: (userData) => set((state) => ({
@@ -21,8 +23,18 @@ export const useAuthStore = create(
       logout: () => set({
         user: null,
         token: null,
-        isAuthenticated: false
+        isAuthenticated: false,
+        expiresAt: null
       }),
+
+      checkSession: () => {
+        const { expiresAt, logout, isAuthenticated } = get();
+        if (isAuthenticated && expiresAt && Date.now() > expiresAt) {
+          logout();
+          return false;
+        }
+        return isAuthenticated;
+      },
     }),
     {
       name: 'tableup-auth-storage', 

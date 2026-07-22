@@ -38,95 +38,6 @@ export default function Home() {
   const [cuisineFilter, setCuisineFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/unauthorized");
-      return;
-    }
-
-    fetchRestaurants();
-  }, [isAuthenticated, router]);
-
-  async function fetchRestaurants() {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // RESTAURANTES FALSOS PARA PROBAR EL FRONT
-      /*
-      const testRestaurants: Restaurant[] = [
-        {
-          id: 1,
-          name: "Restaurante Esencia",
-          category: "Restaurante",
-          status: "Approved",
-          address: "Calle Mayor 125, Madrid, España",
-          phoneNumber: "+34 912 345 678",
-          images: ["/home_bg.png"],
-          cuisine: "Mediterránea",
-          city: "Madrid",
-          priceRange: 250,
-        },
-        {
-          id: 2,
-          name: "Casa Gourmet",
-          category: "Gastronomía",
-          status: "Approved",
-          address: "Av. de la Reina 45, Barcelona, España",
-          phoneNumber: "+34 933 123 456",
-          images: ["/restaurant_bg.jpg"],
-          cuisine: "Internacional",
-          city: "Barcelona",
-          priceRange: 1200,
-        },
-        {
-          id: 3,
-          name: "Bistró Empanada Moderno",
-          category: "Moderno",
-          status: "Approved",
-          address: "Paseo del Prado 8, Sevilla, España",
-          phoneNumber: "+34 954 987 321",
-          images: ["/home_bg2.png"],
-          cuisine: "Contemporánea",
-          city: "Sevilla",
-          priceRange: 80,
-        },
-      ];
-
-      setRestaurants(testRestaurants);
-      return;
-       //<-- */
-
-      //COMENTAR DE AQUÍ HASTA LA "<--" PARA USAR RESTAURANTES FALSOS
-      
-      const res = await fetch(`${API_URL}/api/restaurants`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      const restaurantData = json.data || json;
-      const approvedRestaurants = Array.isArray(restaurantData)
-        ? restaurantData.filter((item) => item.status === "Approved")
-        : [];
-      setRestaurants(
-        approvedRestaurants.map((restaurant: any) => ({
-          id: restaurant.id,
-          name: restaurant.name,
-          category: restaurant.category,
-          status: restaurant.status,
-          address: restaurant.address,
-          phoneNumber: restaurant.phoneNumber,
-          images: restaurant.images,
-          cuisine: restaurant.cuisine || restaurant.category || "General",
-          city: restaurant.city || extractCity(restaurant.address),
-        }))
-      );
-      // <-- 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function extractCity(address?: string) {
     if (!address) return "Desconocida";
     const parts = address.split(",");
@@ -139,6 +50,96 @@ export default function Home() {
     if (priceRange >= 100) return "$$$";
     return "$$";
   }
+
+  async function fetchRestaurants() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // RESTAURANTES FALSOS PARA PROBAR EL FRONT
+        /*
+        const testRestaurants: Restaurant[] = [
+          {
+            id: 1,
+            name: "Restaurante Esencia",
+            category: "Restaurante",
+            status: "Approved",
+            address: "Calle Mayor 125, Madrid, España",
+            phoneNumber: "+34 912 345 678",
+            images: ["/home_bg.png"],
+            cuisine: "Mediterránea",
+            city: "Madrid",
+            priceRange: 250,
+          },
+          {
+            id: 2,
+            name: "Casa Gourmet",
+            category: "Gastronomía",
+            status: "Approved",
+            address: "Av. de la Reina 45, Barcelona, España",
+            phoneNumber: "+34 933 123 456",
+            images: ["/restaurant_bg.jpg"],
+            cuisine: "Internacional",
+            city: "Barcelona",
+            priceRange: 1200,
+          },
+          {
+            id: 3,
+            name: "Bistró Empanada Moderno",
+            category: "Moderno",
+            status: "Approved",
+            address: "Paseo del Prado 8, Sevilla, España",
+            phoneNumber: "+34 954 987 321",
+            images: ["/home_bg2.png"],
+            cuisine: "Contemporánea",
+            city: "Sevilla",
+            priceRange: 80,
+          },
+        ];
+  
+        setRestaurants(testRestaurants);
+        return;
+         //<-- */
+  
+        //COMENTAR DE AQUÍ HASTA LA "<--" PARA USAR RESTAURANTES FALSOS
+        
+        const res = await fetch(`${API_URL}/api/restaurants/public`);
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        const restaurantData = json.data || json;
+        const approvedRestaurants = Array.isArray(restaurantData)
+          ? restaurantData.filter((item) => item.status === "Approved")
+          : [];
+        setRestaurants(
+          approvedRestaurants.map((restaurant: any) => ({
+            id: restaurant.id,
+            name: restaurant.name,
+            category: restaurant.category,
+            status: restaurant.status,
+            address: restaurant.address,
+            phoneNumber: restaurant.phoneNumber,
+            images: restaurant.images,
+            cuisine: restaurant.cuisine || restaurant.category || "General",
+            city: restaurant.city || extractCity(restaurant.address),
+          }))
+        );
+        // <-- 
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/unauthorized");
+      return;
+    }
+
+    fetchRestaurants();
+  }, [isAuthenticated, router]);
 
   const cuisines = useMemo(
     () => Array.from(new Set(restaurants.map((item) => item.cuisine || "General"))),
@@ -292,7 +293,7 @@ export default function Home() {
                 <div className="relative h-48 overflow-hidden bg-[#1d1208]">
                   <Link href={`/restaurant/${restaurant.id}`} className="block h-full w-full">
                     <img
-                      src={restaurant.images && restaurant.images.length > 0 ? restaurant.images[0] : "/home_bg.png"}
+                    src={restaurant.images && restaurant.images.length > 0 ? `${API_URL}${restaurant.images[0]}` : "/home_bg.png"}
                       alt={restaurant.name}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />

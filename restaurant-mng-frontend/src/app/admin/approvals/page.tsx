@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuthStore } from "../../../store/authStore";
+import { redirect } from "next/navigation";
+import UnauthorizedPage from "@/app/unauthorized/page";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -185,13 +187,16 @@ export default function AdminApprovalsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="p-8 text-center text-stone-100">Necesitas iniciar sesión como administrador para ver esta página.</div>
+      redirect('/unauthorized')
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="p-8 text-center text-stone-100">No tienes permisos de administrador.</div>
+      <div className="p-8 text-center text-stone-100">
+        No tienes permisos de administrador.
+        <UnauthorizedPage/>
+      </div>
     );
   }
 
@@ -210,7 +215,7 @@ export default function AdminApprovalsPage() {
 
         <nav className="relative z-10 flex items-center gap-3 text-sm text-stone-200">
           <Link href="/" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</Link>
-          <Link href="/restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</Link>
+          <Link href="/restaurant" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</Link>
           <Link href="/admin/approvals" className="rounded-full bg-emerald-500/20 px-4 py-2 text-emerald-200 transition hover:bg-emerald-500/30">Approvals</Link>
           <Link href="/about" className="rounded-full px-4 py-2 transition hover:bg-white/10">About Us</Link>
         </nav>

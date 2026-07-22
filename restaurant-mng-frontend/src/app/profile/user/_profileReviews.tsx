@@ -25,7 +25,7 @@ export default function ProfileReviews({ r }: { r: Reviews }) {
             Restaurante
           </p>
           <Link
-            href={`/restaurants/${r.restaurantId}`}
+            href={`/restaurant/${r.restaurantId}`}
             className="font-bold text-2xl italic text-white"
           >
             {r.restaurantName}
