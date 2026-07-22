@@ -39,14 +39,14 @@ export default function ReservePage() {
 
   useEffect(() => {
     fetchTables();
-  }, []);
+  }, [token]);
 
   async function fetchTables() {
     try {
       setLoading(true);
       setError(null);
       const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}/tables`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token ? token : ""}` },
       });
       if (!res.ok) throw new Error("No se pudieron cargar las mesas.");
       const json = await res.json();
