@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 
 namespace TableUpApi.Controllers
 {
@@ -47,6 +46,35 @@ namespace TableUpApi.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("public")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(Summary = "Listar todos los restaurantes", Description = "Permite al resto de los usuarios ver los distintos restaurantes aprobados por el Admin")]
+        public async Task<IActionResult> GetAllPublic()
+        {
+            var traceId = $"00-restaurants-{Guid.NewGuid()}";
+            try
+            {
+                var result = await restaurantService.GetAllAsync();
+
+                return Ok(new { success = true, data = result.Where(x => x.Status == RestaurantStatus.Approved) });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new { code = "INTERNAL_SERVER_ERROR", message = "Ocurrio un error inesperado.", traceId = traceId }
+                });
+            }
+
+        }
+
+
         [HttpGet("my-restaurants")]
         [Authorize(Roles = "Owner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -77,7 +105,8 @@ namespace TableUpApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,Owner")]
+        //[Authorize(Roles = "Admin,Owner")]
+        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -182,11 +211,11 @@ namespace TableUpApi.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SwaggerOperation(Summary = 
+        [SwaggerOperation(Summary =
             "Actualizar Estado de Restaurante", Description = "Permite a un Administrador aceptar o rechazar una solicitud para creación de restaurante.\n" +
             "Los estados deben de especificarse como string:" +
             "\n * Pendiente\n * Approved\n * Rejected")]
-        public async Task<IActionResult> UpdateStatus([FromRoute]int id, [FromBody] RestaurantStatus status)
+        public async Task<IActionResult> UpdateStatus([FromRoute] int id, [FromBody] RestaurantStatus status)
         {
             var traceId = $"00-update-restaurant-status-{Guid.NewGuid()}";
             try
@@ -206,7 +235,7 @@ namespace TableUpApi.Controllers
 
                 return Ok(new { success = true, message = "El estado del restaurante ha sido cambiado satisfactoriamente", traceId = traceId });
             }
-            catch (Exception) 
+            catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new
                 {
