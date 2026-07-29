@@ -17,6 +17,7 @@ namespace Application
             services.AddScoped<IRestaurantService, RestaurantService>();
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<IWorkDayService, WorkDayService>();
 
         }
 
