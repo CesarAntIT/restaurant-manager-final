@@ -8,6 +8,7 @@ namespace Domain.Interfaces
         Task<List<Reservation>> GetByUserIdAsync(string userId);
         Task<List<Reservation>> GetByRestaurantIdAsync(int restaurantId);
         Task<List<Reservation>> GetByTableIdAsync(int tableId, DateTime from, DateTime to);
+        Task<List<Reservation>> GetActiveReservationsAsync();
         Task<Reservation?> UpdateStatusAsync(int id, Domain.Common.Enums.ReservationStatus status);
     }
 }

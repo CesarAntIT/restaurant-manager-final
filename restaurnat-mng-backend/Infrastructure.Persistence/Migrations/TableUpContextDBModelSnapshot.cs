@@ -327,9 +327,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("RestaurantId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RestaurantId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -338,8 +335,6 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("RestaurantId");
-
-                    b.HasIndex("RestaurantId1");
 
                     b.ToTable("Reviews", (string)null);
                 });
@@ -540,15 +535,11 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Review", b =>
                 {
-                    b.HasOne("Domain.Entities.Restaurant", null)
+                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
                         .WithMany("Reviews")
                         .HasForeignKey("RestaurantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
-                        .WithMany()
-                        .HasForeignKey("RestaurantId1");
 
                     b.Navigation("Restaurant");
                 });

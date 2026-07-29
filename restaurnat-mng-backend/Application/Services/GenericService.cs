@@ -34,7 +34,7 @@ namespace Application.Services
                 return null;
             }
         }
-        public virtual async Task<DtoModel?> UpdateAsync(DtoModel dto, Guid id)
+        public virtual async Task<DtoModel?> UpdateAsync(DtoModel dto, int id)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace Application.Services
                 return null;
             }
         }
-        public virtual async Task<bool> DeleteAsync(Guid id)
+        public virtual async Task<bool> DeleteAsync(int id)
         {
             try
             {
@@ -64,7 +64,7 @@ namespace Application.Services
                 return false;
             }
         }
-        public virtual async Task<DtoModel?> GetById(Guid id)
+        public virtual async Task<DtoModel?> GetById(int id)
         {
             try
             {

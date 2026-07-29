@@ -20,8 +20,8 @@ namespace Infrastructure.Persistence.EntityConfigurations
             builder.Property(i => i.Cost).HasColumnType("decimal(10,2)").IsRequired();
             builder.Property(i => i.WeightUnit).HasMaxLength(20).IsRequired();
 
-            builder.HasOne<Restaurant>()
-                   .WithMany()
+            builder.HasOne(i => i.Restaurant)
+                   .WithMany(r => r.Ingredients)
                    .HasForeignKey(i => i.RestaurantId)
                    .OnDelete(DeleteBehavior.Cascade);
         }
