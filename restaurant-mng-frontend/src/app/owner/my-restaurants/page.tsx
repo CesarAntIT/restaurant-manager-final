@@ -175,6 +175,12 @@ export default function MyRestaurants() {
             My Restaurants
           </Link>
           <Link
+            href="/owner/ingredients"
+            className="rounded-full bg-amber-500/20 px-4 py-2 text-amber-200 transition hover:bg-amber-500/30"
+          >
+            Ingredientes
+          </Link>
+          <Link
             href="/about"
             className="rounded-full px-4 py-2 transition hover:bg-white/10"
           >

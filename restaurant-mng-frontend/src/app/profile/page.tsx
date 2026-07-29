@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -490,9 +491,9 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {(loadingApi || apiMessage) && (
+          {loadingApi && (
             <div className="rounded-lg border border-sky-800/40 bg-sky-950/30 px-4 py-3 text-sm text-sky-200">
-              {loadingApi ? "Conectando perfil con la API..." : apiMessage}
+              Conectando perfil con la API...
             </div>
           )}
 
@@ -751,13 +752,21 @@ function OwnerManagementPanel({
           <h2 className="mt-1 text-lg font-bold text-white">Crear, editar, eliminar y revisar aprobacion</h2>
           <p className="mt-2 text-xs leading-5 text-stone-400">{message}</p>
         </div>
-        <button
-          type="button"
-          onClick={onCreate}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold uppercase text-neutral-950 transition hover:bg-amber-400"
-        >
-          Crear restaurante
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/owner/ingredients"
+            className="rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 py-2 text-xs font-bold uppercase text-amber-200 transition hover:border-amber-400 hover:text-amber-100"
+          >
+            Gestionar ingredientes
+          </Link>
+          <button
+            type="button"
+            onClick={onCreate}
+            className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold uppercase text-neutral-950 transition hover:bg-amber-400"
+          >
+            Crear restaurante
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
