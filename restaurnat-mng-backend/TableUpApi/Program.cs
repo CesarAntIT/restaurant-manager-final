@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Application;
 using Application.Interfaces;
 using Application.Services;
@@ -7,7 +8,6 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Shared;
 using restaurnat_mng_backend.Extensions;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +37,10 @@ builder.Services.AddScoped<ITableRepository, TableRepository>();
 builder.Services.AddScoped<ITableService, TableService>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
+builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IDishIngredientRepository, DishIngredientRepository>();
+builder.Services.AddScoped<IDishService, DishService>();
 
 builder.Services.AddCors(options =>
 {
