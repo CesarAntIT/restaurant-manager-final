@@ -116,7 +116,9 @@ namespace Application.Services
             var reservations = await reservationRepository.GetActiveReservationsAsync();
             return reservations.Select(MapToDto).ToList();
         }
-        private async Task<bool> UpdateIngredientStockAsync(int dishId)
+
+        //private methods
+        private async Task<bool> UpdateIngredientStockAsync(int dishId) //bajar stock
         {
             var dish = await dishRepository.GetByIdAsync(dishId);
             if (dish == null) return false;
