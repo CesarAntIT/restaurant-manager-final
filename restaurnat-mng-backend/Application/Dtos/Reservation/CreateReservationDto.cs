@@ -5,6 +5,5 @@ namespace Application.Dtos.Reservation
         public required int TableId { get; set; }
         public required DateTime DateTimeReservation { get; set; }
         public required int PeopleCount { get; set; }
-        public List<int> DishIds { get; set; } = new();
     }
 }

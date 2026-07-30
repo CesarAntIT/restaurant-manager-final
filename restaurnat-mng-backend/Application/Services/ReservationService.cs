@@ -80,14 +80,6 @@ namespace Application.Services
             var created = await reservationRepository.AddAsync(reservation);
             if (created == null) return (null, "No se pudo crear la reserva.");
 
-            if (dto.DishIds != null && dto.DishIds.Any())
-            {
-                foreach (var dishId in dto.DishIds)
-                {
-                    await UpdateIngredientStockAsync(dishId);
-                }
-            }
-
             created.Table = table;
             return (MapToDto(created), null);
         }

@@ -11,10 +11,16 @@ namespace Application.Services
     public class WorkDayService : IWorkDayService
     {
         private readonly IWorkDayRepository _workDayRepository;
-
-        public WorkDayService(IWorkDayRepository workDayRepository)
+        private readonly IDishIngredientRepository _dishRepository;
+        private readonly IIngredientRepository _ingredientRepository;
+        public WorkDayService(
+            IWorkDayRepository workDayRepository,
+            IDishIngredientRepository dishRepository,
+            IIngredientRepository ingredientRepository)
         {
             _workDayRepository = workDayRepository;
+            _dishRepository = dishRepository;
+            _ingredientRepository = ingredientRepository;
         }
 
         public async Task<bool> OpenWorkDayAsync(int restaurantId)
@@ -37,6 +43,22 @@ namespace Application.Services
             var result = await _workDayRepository.AddAsync(workDay);
 
             return result != null;
+        }
+        public async Task<bool> RegisterDishSaleAsync(int dishId, int quantity)
+        {
+            var dish = await _dishRepository.GetByIdAsync(dishId);
+            if (dish == null) return false;
+
+            foreach (var di in dish.DishIngredients)
+            {
+                var ingredient = await _ingredientRepository.GetByIdAsync(di.IngredientId);
+                if (ingredient == null) continue;
+
+                ingredient.Quantity -= di.QuantityNeeded * quantity;
+                await _ingredientRepository.UpdateIngredientAsync(ingredient.Id, ingredient);
+            }
+
+            return true;
         }
 
         public async Task<bool> CloseWorkDayAsync(int restaurantId)
