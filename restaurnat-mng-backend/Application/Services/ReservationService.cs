@@ -10,11 +10,19 @@ namespace Application.Services
     {
         private readonly IReservationRepository reservationRepository;
         private readonly ITableRepository tableRepository;
+        private readonly IDishIngredientRepository dishRepository;
+        private readonly IIngredientRepository ingredientRepository;
 
-        public ReservationService(IReservationRepository reservationRepository, ITableRepository tableRepository)
+        public ReservationService(
+            IReservationRepository reservationRepository,
+            ITableRepository tableRepository,
+            IDishIngredientRepository dishRepository,
+            IIngredientRepository ingredientRepository)
         {
             this.reservationRepository = reservationRepository;
             this.tableRepository = tableRepository;
+            this.dishRepository = dishRepository;
+            this.ingredientRepository = ingredientRepository;
         }
 
         public async Task<ReservationDto?> GetByIdAsync(int id)
@@ -34,6 +42,7 @@ namespace Application.Services
             var reservations = await reservationRepository.GetByRestaurantIdAsync(restaurantId);
             return reservations.Select(MapToDto).ToList();
         }
+
         public async Task<(ReservationDto? Reservation, string? Error)> CreateAsync(string userId, CreateReservationDto dto)
         {
             var table = await tableRepository.GetByIdAsync(dto.TableId);
@@ -71,9 +80,18 @@ namespace Application.Services
             var created = await reservationRepository.AddAsync(reservation);
             if (created == null) return (null, "No se pudo crear la reserva.");
 
+            if (dto.DishIds != null && dto.DishIds.Any())
+            {
+                foreach (var dishId in dto.DishIds)
+                {
+                    await UpdateIngredientStockAsync(dishId);
+                }
+            }
+
             created.Table = table;
             return (MapToDto(created), null);
         }
+
         public async Task<(bool Success, string? Error)> CancelAsync(int id, string userId)
         {
             var existing = await reservationRepository.GetByIdAsync(id);
@@ -99,6 +117,23 @@ namespace Application.Services
             return reservations.Select(MapToDto).ToList();
         }
 
+        // 🔑 Método privado para bajar stock
+        private async Task<bool> UpdateIngredientStockAsync(int dishId)
+        {
+            var dish = await dishRepository.GetByIdAsync(dishId);
+            if (dish == null) return false;
+
+            foreach (var di in dish.DishIngredients)
+            {
+                var ingredient = await ingredientRepository.GetByIdAsync(di.IngredientId);
+                if (ingredient == null) continue;
+
+                ingredient.Quantity -= di.QuantityNeeded;
+                await ingredientRepository.UpdateIngredientAsync(ingredient.Id, ingredient);
+            }
+
+            return true;
+        }
 
         private static ReservationDto MapToDto(Reservation r) => new()
         {
