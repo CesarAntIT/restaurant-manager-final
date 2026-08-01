@@ -19,5 +19,13 @@ namespace Infrastructure.Persistence.Repositories
                     w.RestaurantId == restaurantId &&
                     w.Status == WorkDayStatus.Open);
         }
+
+        public async Task<List<WorkDay>> GetByRestaurantIdAsync(int restaurantId)
+        {
+            return await context.Set<WorkDay>()
+                .Where(w => w.RestaurantId == restaurantId)
+                .OrderByDescending(w => w.TimeOpen)
+                .ToListAsync();
+        }
     }
 }

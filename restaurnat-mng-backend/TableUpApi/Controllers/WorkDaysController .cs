@@ -175,5 +175,34 @@ namespace WebApi.Controllers.v1
                 });
             }
         }
+        [HttpGet("history/{restaurantId}")]
+        [Authorize(Roles = "Owner,Admin")]
+        [SwaggerOperation(
+            Summary = "Historial de jornadas laborales",
+            Description = "Devuelve todas las jornadas laborales (abiertas y cerradas) de un restaurante."
+        )]
+        public async Task<IActionResult> GetWorkDayHistory(int restaurantId)
+        {
+            var result = await _workDayService.GetWorkDayHistoryAsync(restaurantId);
+            return Ok(new { success = true, data = result });
+        }
+
+        [HttpGet("active/{restaurantId}")]
+        [Authorize(Roles = "Owner,Admin")]
+        [SwaggerOperation(
+            Summary = "Consultar jornada activa",
+            Description = "Verifica si existe una jornada laboral activa para un restaurante."
+        )]
+        public async Task<IActionResult> GetActiveWorkDay(int restaurantId)
+        {
+            var result = await _workDayService.GetActiveWorkDayAsync(restaurantId);
+            if (result == null)
+            {
+                return Ok(new { success = false, message = "No hay jornada activa." });
+            }
+
+            return Ok(new { success = true, data = result });
+        }
+
     }
 }
