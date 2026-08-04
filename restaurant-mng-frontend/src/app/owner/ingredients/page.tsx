@@ -12,7 +12,7 @@ type RestaurantOption = {
 };
 
 type Ingredient = {
-  id: string;
+  id: number;
   restaurantId: number;
   name: string;
   initialQuantity: number;
@@ -26,7 +26,6 @@ type Ingredient = {
 type IngredientForm = Omit<Ingredient, "id" | "restaurantId" | "updatedAt">;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5155";
-const STORAGE_KEY = "tableup-owner-ingredients";
 const currencyFormatter = new Intl.NumberFormat("es-DO", {
   style: "currency",
   currency: "DOP",
@@ -45,42 +44,28 @@ const initialForm: IngredientForm = {
   weightUnit: "kg",
 };
 
-const seedIngredients: Ingredient[] = [
-  {
-    id: "seed-1",
-    restaurantId: 1,
-    name: "Harina premium",
-    initialQuantity: 50,
-    quantity: 36,
-    stockMinimo: 12,
-    cost: 28,
-    weightUnit: "kg",
-    updatedAt: "Hoy",
-  },
-  {
-    id: "seed-2",
-    restaurantId: 1,
-    name: "Tomate fresco",
-    initialQuantity: 25,
-    quantity: 7,
-    stockMinimo: 10,
-    cost: 18,
-    weightUnit: "kg",
-    updatedAt: "Hoy",
-  },
-  {
-    id: "seed-3",
-    restaurantId: 1,
-    name: "Aceite de oliva",
-    initialQuantity: 12,
-    quantity: 9,
-    stockMinimo: 4,
-    cost: 42,
-    weightUnit: "lt",
-    updatedAt: "Hoy",
-  },
-];
+function mapIngredientFromApi(item: any): Ingredient {
+  return {
+    id: Number(item.id ?? item.Id),
+    restaurantId: Number(item.restaurantId ?? item.RestaurantId),
+    name: item.name ?? item.Name ?? "",
+    initialQuantity: Number(item.initialQuantity ?? item.InitialQuantity ?? 0),
+    quantity: Number(item.quantity ?? item.Quantity ?? 0),
+    stockMinimo: Number(item.stockMinimo ?? item.StockMinimo ?? 0),
+    cost: Number(item.cost ?? item.Cost ?? 0),
+    weightUnit: item.weightUnit ?? item.WeightUnit ?? "kg",
+    updatedAt: "API",
+  };
+}
 
+async function readApiError(response: Response) {
+  try {
+    const json = await response.json();
+    return json?.message ?? json?.error?.message ?? "No se pudo procesar la solicitud.";
+  } catch {
+    return "No se pudo procesar la solicitud.";
+  }
+}
 export default function IngredientsPanelPage() {
   const { user, token, isAuthenticated } = useAuthStore() as {
     user: { role?: string; name?: string; email?: string; isAdmin?: boolean } | null;
@@ -90,26 +75,15 @@ export default function IngredientsPanelPage() {
 
   const [restaurants, setRestaurants] = useState<RestaurantOption[]>(fallbackRestaurants);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(1);
-  const [ingredients, setIngredients] = useState<Ingredient[]>(seedIngredients);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [form, setForm] = useState<IngredientForm>(initialForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const normalizedRole = String(user?.role ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const isOwner = normalizedRole === "owner" || normalizedRole === "dueno" || normalizedRole === "dueao" || normalizedRole === "dueño";
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setIngredients(JSON.parse(saved));
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ingredients));
-  }, [ingredients]);
 
   useEffect(() => {
     if (!isAuthenticated || !token || !isOwner) return;
@@ -125,7 +99,7 @@ export default function IngredientsPanelPage() {
 
         if (apiRestaurants.length > 0) {
           const mapped = apiRestaurants.map((item: any) => ({
-            id: item.id ?? item.Id,
+            id: Number(item.id ?? item.Id),
             name: item.name ?? item.Name,
             category: item.category ?? item.Category,
           }));
@@ -133,7 +107,7 @@ export default function IngredientsPanelPage() {
           setSelectedRestaurantId(mapped[0].id);
         }
       } catch {
-        setMessage("No se pudieron cargar restaurantes desde la API. Puedes trabajar con el restaurante de ejemplo.");
+        setMessage("No se pudieron cargar restaurantes desde la API.");
       } finally {
         setLoading(false);
       }
@@ -142,6 +116,34 @@ export default function IngredientsPanelPage() {
     loadRestaurants();
   }, [isAuthenticated, isOwner, token]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !token || !isOwner || !selectedRestaurantId) return;
+
+    async function loadIngredients() {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_URL}/api/restaurants/${selectedRestaurantId}/ingredients`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          throw new Error(await readApiError(res));
+        }
+
+        const json = await res.json();
+        const rows = Array.isArray(json) ? json.map(mapIngredientFromApi) : [];
+        setIngredients(rows);
+        setMessage(rows.length ? "Ingredientes cargados desde la API." : "No hay ingredientes registrados en la API.");
+      } catch (error) {
+        setIngredients([]);
+        setMessage(error instanceof Error ? error.message : "No se pudieron cargar ingredientes desde la API.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadIngredients();
+  }, [isAuthenticated, isOwner, selectedRestaurantId, token]);
   const selectedRestaurant = restaurants.find((restaurant) => restaurant.id === selectedRestaurantId) ?? restaurants[0];
   const visibleIngredients = ingredients
     .filter((ingredient) => ingredient.restaurantId === selectedRestaurantId)
@@ -171,36 +173,74 @@ export default function IngredientsPanelPage() {
     setEditingId(null);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!token) {
+      setMessage("No hay sesion activa para guardar en la API.");
+      return;
+    }
 
     if (!form.name.trim()) {
       setMessage("El nombre del ingrediente es obligatorio.");
       return;
     }
 
-    if (editingId) {
-      setIngredients((current) =>
-        current.map((ingredient) =>
-          ingredient.id === editingId
-            ? { ...ingredient, ...form, name: form.name.trim(), updatedAt: "Ahora" }
-            : ingredient,
-        ),
-      );
-      setMessage("Ingrediente actualizado correctamente.");
-    } else {
-      const newIngredient: Ingredient = {
-        ...form,
-        id: crypto.randomUUID(),
-        restaurantId: selectedRestaurantId,
-        name: form.name.trim(),
-        updatedAt: "Ahora",
-      };
-      setIngredients((current) => [newIngredient, ...current]);
-      setMessage("Ingrediente agregado al inventario.");
-    }
+    try {
+      setLoading(true);
+      const endpoint = editingId
+        ? `${API_URL}/api/restaurants/${selectedRestaurantId}/ingredients/${editingId}`
+        : `${API_URL}/api/restaurants/${selectedRestaurantId}/ingredients`;
+      const method = editingId ? "PUT" : "POST";
+      const body = editingId
+        ? {
+            name: form.name.trim(),
+            quantity: form.quantity,
+            stockMinimo: form.stockMinimo,
+            cost: form.cost,
+            weightUnit: form.weightUnit,
+          }
+        : {
+            name: form.name.trim(),
+            initialQuantity: form.initialQuantity,
+            stockMinimo: form.stockMinimo,
+            cost: form.cost,
+            weightUnit: form.weightUnit,
+          };
 
-    resetForm();
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readApiError(res));
+      }
+
+      const json = await res.json();
+      const savedIngredient = mapIngredientFromApi(json);
+
+      setIngredients((current) => {
+        if (editingId) {
+          return current.map((ingredient) =>
+            ingredient.id === editingId ? savedIngredient : ingredient,
+          );
+        }
+
+        return [savedIngredient, ...current];
+      });
+
+      setMessage(editingId ? "Ingrediente actualizado en la API." : "Ingrediente agregado en la API.");
+      resetForm();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el ingrediente en la API.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function editIngredient(ingredient: Ingredient) {
@@ -216,9 +256,30 @@ export default function IngredientsPanelPage() {
     setMessage(`Editando ${ingredient.name}.`);
   }
 
-  function deleteIngredient(id: string) {
-    setIngredients((current) => current.filter((ingredient) => ingredient.id !== id));
-    setMessage("Ingrediente eliminado del inventario.");
+  async function deleteIngredient(id: number) {
+    if (!token) {
+      setMessage("No hay sesion activa para eliminar en la API.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/api/restaurants/${selectedRestaurantId}/ingredients/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error(await readApiError(res));
+      }
+
+      setIngredients((current) => current.filter((ingredient) => ingredient.id !== id));
+      setMessage("Ingrediente eliminado en la API.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el ingrediente en la API.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!isAuthenticated) {
@@ -275,7 +336,7 @@ export default function IngredientsPanelPage() {
                 ))}
               </select>
               <p className="mt-3 text-xs leading-5 text-stone-500">{selectedRestaurant?.category ?? "Categoria pendiente"}</p>
-              {loading && <p className="mt-3 text-xs text-sky-300">Cargando restaurantes...</p>}
+              {loading && <p className="mt-3 text-xs text-sky-300">Conectando con la API...</p>}
             </section>
 
             <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
@@ -423,7 +484,7 @@ function LowStockAlert({ ingredient }: { ingredient: Ingredient }) {
   );
 }
 
-function IngredientRow({ ingredient, onEdit, onDelete }: { ingredient: Ingredient; onEdit: (ingredient: Ingredient) => void; onDelete: (id: string) => void }) {
+function IngredientRow({ ingredient, onEdit, onDelete }: { ingredient: Ingredient; onEdit: (ingredient: Ingredient) => void; onDelete: (id: number) => void }) {
   const stockLow = ingredient.quantity <= ingredient.stockMinimo;
   const usage = ingredient.initialQuantity > 0 ? Math.min(100, Math.round(((ingredient.initialQuantity - ingredient.quantity) / ingredient.initialQuantity) * 100)) : 0;
 
