@@ -1,5 +1,4 @@
-﻿using Application.Dtos.Review;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Domain.Common.Enums;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -75,6 +74,16 @@ namespace Application.Services
             await _workDayRepository.UpdateAsync(activeWorkDay.Id, activeWorkDay);
 
             return true;
+        }
+
+        public async Task<List<WorkDay>> GetWorkDayHistoryAsync(int restaurantId)
+        {
+            return await _workDayRepository.GetByRestaurantIdAsync(restaurantId);
+        }
+
+        public async Task<WorkDay?> GetActiveWorkDayAsync(int restaurantId)
+        {
+            return await _workDayRepository.GetActiveWorkDayAsync(restaurantId);
         }
     }
 
