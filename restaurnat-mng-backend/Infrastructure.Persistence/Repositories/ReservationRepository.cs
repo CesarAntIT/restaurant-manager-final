@@ -50,7 +50,7 @@ namespace Infrastructure.Persistence.Repositories
         {
             return await context.Reservations
                 .Include(r => r.Table)
-                .Where(r => r.Status == ReservationStatus.Pending)
+                .Where(r => r.Status == ReservationStatus.Confirmed)
                 .OrderBy(r => r.DateTimeReservation)
                 .ToListAsync();
         }
