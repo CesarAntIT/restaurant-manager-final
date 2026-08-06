@@ -332,7 +332,7 @@ export default function OwnerProfilePage() {
           <StatusBanner
             saved={saved}
             loadingApi={loadingApi}
-            apiMessage={apiMessage}
+            apiMessage=""
           />
 
           {/*<OwnerManagementPanel
@@ -353,13 +353,22 @@ export default function OwnerProfilePage() {
                   VER TODOS MIS RESTAURANTES
                 </h2>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/owner/my-restaurants")}
-                      className="rounded-lg bg-amber-500 px-4 py-2 text-xl font-extrabold italic uppercase text-neutral-950 transition hover:bg-amber-400"
-                    >
-                      Ir ahora!
-                    </button>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/owner/my-restaurants")}
+                        className="rounded-lg bg-amber-500 px-4 py-2 text-xl font-extrabold italic uppercase text-neutral-950 transition hover:bg-amber-400"
+                      >
+                        Ir ahora!
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/owner/ingredients")}
+                        className="rounded-lg border border-amber-500/50 px-4 py-2 text-xl font-extrabold italic uppercase text-amber-300 transition hover:border-amber-400 hover:text-amber-200"
+                      >
+                        Ingredientes
+                      </button>
+                    </div>
                   </div>
           </section>
         </div>
