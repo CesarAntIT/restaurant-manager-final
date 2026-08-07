@@ -6,5 +6,6 @@ namespace Domain.Interfaces
     {
         Task<WorkDay?> GetActiveWorkDayAsync(int restaurantId);
         Task<List<WorkDay>> GetByRestaurantIdAsync(int restaurantId);
+        Task<List<WorkDay>> GetByRestaurantAndDateRangeAsync(int restaurantId, DateTime from, DateTime to);
     }
 }

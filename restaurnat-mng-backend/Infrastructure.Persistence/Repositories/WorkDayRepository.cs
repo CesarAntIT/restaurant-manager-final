@@ -27,5 +27,17 @@ namespace Infrastructure.Persistence.Repositories
                 .OrderByDescending(w => w.TimeOpen)
                 .ToListAsync();
         }
+
+        public async Task<List<WorkDay>> GetByRestaurantAndDateRangeAsync(int restaurantId, DateTime from, DateTime to)
+        {
+            return await context.Set<WorkDay>()
+                .Include(w => w.WorkDayItems)
+                    .ThenInclude(wi => wi.Dish)
+                .Where(w => w.RestaurantId == restaurantId
+                         && w.TimeOpen >= from
+                         && w.TimeOpen < to)
+                .OrderBy(w => w.TimeOpen)
+                .ToListAsync();
+        }
     }
 }
