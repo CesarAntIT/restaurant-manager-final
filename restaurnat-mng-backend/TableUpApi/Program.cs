@@ -42,6 +42,7 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishIngredientRepository, DishIngredientRepository>();
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddHttpClient<IAIService, GeminiService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
 
 builder.Services.AddCors(options =>
 {

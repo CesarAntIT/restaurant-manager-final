@@ -66,7 +66,6 @@ namespace Application.Services
             var overlapping = await reservationRepository.GetByTableIdAsync(dto.TableId, windowStart, windowEnd);
             if (overlapping.Any())
                 return (null, "La mesa ya tiene una reserva en ese horario.");
-
             var reservation = new Reservation
             {
                 Id = 0,
@@ -74,7 +73,7 @@ namespace Application.Services
                 TableId = dto.TableId,
                 DateTimeReservation = reservationDateUtc,
                 PeopleCount = dto.PeopleCount,
-                Status = ReservationStatus.Pending
+                Status = ReservationStatus.Confirmed
             };
 
             var created = await reservationRepository.AddAsync(reservation);
@@ -109,8 +108,7 @@ namespace Application.Services
             return reservations.Select(MapToDto).ToList();
         }
 
-        //private methods
-        private async Task<bool> UpdateIngredientStockAsync(int dishId) //bajar stock
+        private async Task<bool> UpdateIngredientStockAsync(int dishId)
         {
             var dish = await dishRepository.GetByIdAsync(dishId);
             if (dish == null) return false;

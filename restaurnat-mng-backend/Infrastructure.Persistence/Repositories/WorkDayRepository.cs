@@ -19,5 +19,25 @@ namespace Infrastructure.Persistence.Repositories
                     w.RestaurantId == restaurantId &&
                     w.Status == WorkDayStatus.Open);
         }
+
+        public async Task<List<WorkDay>> GetByRestaurantIdAsync(int restaurantId)
+        {
+            return await context.Set<WorkDay>()
+                .Where(w => w.RestaurantId == restaurantId)
+                .OrderByDescending(w => w.TimeOpen)
+                .ToListAsync();
+        }
+
+        public async Task<List<WorkDay>> GetByRestaurantAndDateRangeAsync(int restaurantId, DateTime from, DateTime to)
+        {
+            return await context.Set<WorkDay>()
+                .Include(w => w.WorkDayItems)
+                    .ThenInclude(wi => wi.Dish)
+                .Where(w => w.RestaurantId == restaurantId
+                         && w.TimeOpen >= from
+                         && w.TimeOpen < to)
+                .OrderBy(w => w.TimeOpen)
+                .ToListAsync();
+        }
     }
 }

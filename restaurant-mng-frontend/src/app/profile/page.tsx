@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { LoadingScreen, useProfileSession } from "./_shared";
 
 export default function ProfilePage() {
-  const { router, sessionLoaded, isAuthenticated, user, userView } = useProfileSession();
+  const { router, sessionLoaded, isAuthenticated, user, userView } =
+    useProfileSession();
 
   useEffect(() => {
     if (!sessionLoaded || !isAuthenticated || !user) return;
