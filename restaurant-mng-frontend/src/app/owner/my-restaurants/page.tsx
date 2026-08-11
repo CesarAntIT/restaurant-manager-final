@@ -334,9 +334,12 @@ export default function MyRestaurants() {
         </div>
 
         <div className="">
+          <Link href={`/owner/restaurants/${r.id}/workdays`} className="mb-2 bg-emerald-500/50 p-1.5 rounded-xl hover:bg-emerald-500 hover:font-bold w-20 text-center block">
+            Jornadas
+          </Link>
           <Link href={`/owner/restaurants/${r.id}/tables`} className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20 text-center block">
-  Mesas
-</Link>
+            Mesas
+          </Link>
           <br />
           <button
             className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20"

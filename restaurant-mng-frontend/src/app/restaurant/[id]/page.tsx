@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
@@ -32,12 +33,6 @@ type Restaurant = {
   description: string;
 };
 
-interface RestaurantDetailProps {
-  params: {
-    id: string;
-  };
-}
-
 function computeStars(r: Review) {
   const avg = (r.food + r.ambience + r.service + r.personal) / 4;
   return Math.round(avg * 10) / 10;
@@ -53,8 +48,8 @@ function getColorForScore(score: number) {
   return { bg: "#7f1d1d", text: "#fee2e2" };
 }
 
-export default function RestaurantDetail({ params }: RestaurantDetailProps) {
-  const { id } = params;
+export default function RestaurantDetail() {
+  const { id } = useParams() as { id: string };
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
