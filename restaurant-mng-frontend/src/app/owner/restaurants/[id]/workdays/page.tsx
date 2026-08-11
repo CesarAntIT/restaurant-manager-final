@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChangeEvent, useEffect, useState } from "react";
+import WorkdayToast from "@/components/WorkdayToast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
@@ -32,7 +33,6 @@ export default function WorkDayPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [workdayNotification, setWorkdayNotification] = useState<string | null>(null)
-  const [workdayNotificationTimeout, setWorkdayNotificationTimeout] = useState<NodeJS.Timeout | null>(null)
   const [workdayNotificationType, setWorkdayNotificationType] = useState<'success' | 'error' | null>(null)
 
   const filteredDishes = Dishes.filter((d) =>
@@ -105,13 +105,28 @@ export default function WorkDayPage() {
 
       if (res.ok != true) {
         const data = await res.json();
-        return Error(data.error);
+        console.error(data.error);
+        return false;
       }
 
       const data = await res.json();
       console.log(data.message);
+      return true;
     } catch (e) {
       console.error(e);
+      return false;
+    }
+  }
+
+  async function handleConfirmSale() {
+    const success = await postSale();
+    if (success) {
+      setWorkdayNotification("Venta registrada.");
+      setWorkdayNotificationType("success");
+      RefreshPage();
+    } else {
+      setWorkdayNotification("Error al registrar la venta");
+      setWorkdayNotificationType("error");
     }
   }
   async function checkRestaurant() {
@@ -371,33 +386,15 @@ export default function WorkDayPage() {
                         const success = await activateWorkDay(pendingAction === "start");
                         setActionLoading(false);
                         setShowConfirmModal(false);
-                        // show toast notification
+                        // show toast notification (WorkdayToast will auto-dismiss)
                         if (success) {
                           const msg = pendingAction === "start" ? "Jornada iniciada." : "Jornada finalizada.";
                           setWorkdayNotification(msg);
                           setWorkdayNotificationType("success");
-                          if (workdayNotificationTimeout) {
-                            clearTimeout(workdayNotificationTimeout);
-                          }
-                          const to = setTimeout(() => {
-                            setWorkdayNotification(null);
-                            setWorkdayNotificationTimeout(null);
-                            setWorkdayNotificationType(null);
-                          }, 8000);
-                          setWorkdayNotificationTimeout(to);
                         } else {
                           const msg = "Error al completar la acción";
                           setWorkdayNotification(msg);
                           setWorkdayNotificationType("error");
-                          if (workdayNotificationTimeout) {
-                            clearTimeout(workdayNotificationTimeout);
-                          }
-                          const to = setTimeout(() => {
-                            setWorkdayNotification(null);
-                            setWorkdayNotificationTimeout(null);
-                            setWorkdayNotificationType(null);
-                          }, 8000);
-                          setWorkdayNotificationTimeout(to);
                         }
                         setPendingAction(null);
                       }}
@@ -505,35 +502,14 @@ export default function WorkDayPage() {
           </div>
         </div>
       </div>
-        {workdayNotification && (
-          <div
-            className={`fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-3xl p-4 text-sm backdrop-blur-xl shadow-2xl ${
-              workdayNotificationType === "error"
-                ? "border border-red-500/50 bg-red-950/80 text-red-200"
-                : "border border-emerald-500/50 bg-emerald-950/80 text-emerald-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center rounded-full p-2">
-                {workdayNotificationType === "error" ? (
-                  <svg className="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M15 9L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M7 13L10.5 16.5L17 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">{workdayNotification}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        <WorkdayToast
+          message={workdayNotification}
+          type={workdayNotificationType}
+          onClose={() => {
+            setWorkdayNotification(null);
+            setWorkdayNotificationType(null);
+          }}
+        />
     </div>
   );
 }
