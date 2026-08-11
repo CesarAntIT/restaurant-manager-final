@@ -6,7 +6,7 @@ import Link from "next/link";
 import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 import { useParams } from "next/navigation";
 import { ChangeEvent, useEffect, useState } from "react";
-//import WorkdayToast from "@/components/WorkdayToast";
+import WorkdayToast from "@/components/WorkdayToast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
@@ -497,14 +497,14 @@ export default function WorkDayPage() {
           </div>
         </div>
       </div>
-        {/* <WorkdayToast
+        <WorkdayToast
           message={workdayNotification}
           type={workdayNotificationType}
           onClose={() => {
             setWorkdayNotification(null);
             setWorkdayNotificationType(null);
           }}
-        /> */}
+        />
     </div>
   );
 }
