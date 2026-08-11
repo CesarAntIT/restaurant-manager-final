@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import RestaurantForm from "./_restaurantForm";
+import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -159,7 +160,7 @@ export default function MyRestaurants() {
             Restaurants
           </Link>
           <Link
-            href="/restaurants"
+            href="/owner/my-restaurants"
             className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2"
           >
             My Restaurants
@@ -179,13 +180,7 @@ export default function MyRestaurants() {
         </nav>
 
         <div className="relative z-10 flex items-center gap-3">
-          <Image
-            src="/tableup-logo.png"
-            alt="Profile"
-            width={40}
-            height={40}
-            className="rounded-full border border-white/20 bg-white/10"
-          />
+          <ProfileAvatarButton />
         </div>
       </header>
 

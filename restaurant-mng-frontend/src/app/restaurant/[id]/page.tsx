@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, use } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
@@ -24,12 +24,18 @@ type Review = {
 };
 
 type Restaurant = {
-  id: number,
-  name: string,
-  category: string,
-  address: string,
-  images: [],
-  description: string
+  id: number;
+  name: string;
+  category: string;
+  address: string;
+  images?: string[];
+  description: string;
+};
+
+interface RestaurantDetailProps {
+  params: {
+    id: string;
+  };
 }
 
 function computeStars(r: Review) {
@@ -47,11 +53,10 @@ function getColorForScore(score: number) {
   return { bg: "#7f1d1d", text: "#fee2e2" };
 }
 
-export default function RestaurantDetail({ params }) {
-  const { id } = use(params);
+export default function RestaurantDetail({ params }: RestaurantDetailProps) {
+  const { id } = params;
 
-
-  const [restaurant, setRestaurant] = useState<Restaurant|null>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
@@ -300,8 +305,16 @@ export default function RestaurantDetail({ params }) {
 
   return (
     <main className="min-h-screen bg-[#0f0b07] text-white">
-      <div className="bg-cover bg-center" style={{ backgroundImage: `url('${API_URL}${restaurant.images[0]}')`, height: 260 }} />
+      <div className="bg-cover bg-center" style={{ backgroundImage: `url('${API_URL}${restaurant.images?.[0] ?? "/home_bg.png"}')`, height: 260 }} />
       <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-stone-100 transition hover:bg-white/10"
+          >
+            ← Back
+          </Link>
+        </div>
         <div className="mb-8 flex items-start gap-6">
           <div className="flex-1">
             <h1 className="text-4xl font-semibold">{restaurant.name}</h1>
@@ -317,7 +330,12 @@ export default function RestaurantDetail({ params }) {
           <div className="w-80">
             <div className="rounded-2xl bg-[#2f1f12]/80 p-4">
               <h3 className="text-sm font-semibold" style={{ color: '#ffb900' }}>Make a reservation</h3>
-              <p className="mt-4 text-sm text-stone-300">Reservation UI placeholder</p>
+              <Link
+                href={`/restaurant/${id}/reserve`}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-3xl bg-amber-500 px-4 py-3 text-center text-sm font-semibold text-neutral-950 transition hover:bg-amber-400"
+              >
+                Reservar
+              </Link>
             </div>
           </div>
         </div>
@@ -327,7 +345,7 @@ export default function RestaurantDetail({ params }) {
             <div className="rounded-2xl bg-[#2f1f12]/40 p-6">
               <p className="text-sm text-stone-300">{restaurant.description}</p>
               <div className="mt-4 grid grid-cols-3 gap-3">
-                {restaurant.images.map((src, i) => (
+                {(restaurant.images ?? []).map((src, i) => (
                   <img key={i} src={API_URL + src} alt={`${restaurant.name}-${i}`} className="h-28 w-full rounded-lg object-cover" />
                 ))}
               </div>
@@ -471,7 +489,9 @@ export default function RestaurantDetail({ params }) {
             <div className="rounded-2xl bg-[#2f1f12]/40 p-6">
               <h4 className="text-sm font-semibold text-amber-200">Photos</h4>
               <div className="mt-3 grid grid-cols-1 gap-2">
-                {restaurant.images.map((s, i) => (<img key={i} src={`${API_URL}${s}`} className="h-20 w-full rounded-md object-cover" alt="photo"/>))}
+                {(restaurant.images ?? []).map((s, i) => (
+                  <img key={i} src={`${API_URL}${s}`} className="h-20 w-full rounded-md object-cover" alt="photo" />
+                ))}
               </div>
             </div>
           </aside>

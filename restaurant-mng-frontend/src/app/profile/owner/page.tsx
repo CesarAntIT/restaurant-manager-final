@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   LoadingScreen,
   PersonalInfoCard,
@@ -298,6 +299,15 @@ export default function OwnerProfilePage() {
         initials={userView.initials}
         onLogout={handleLogout}
       />
+
+      <div className="mx-auto max-w-7xl px-5 py-4 sm:px-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-stone-100 transition hover:bg-white/10"
+        >
+          ← Back
+        </Link>
+      </div>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         <ProfileSidebar

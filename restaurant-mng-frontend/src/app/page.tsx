@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/authStore";
+import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -28,6 +29,7 @@ export default function Home() {
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
   const isAdmin = Boolean(user && (user.role === "Admin" || user.isAdmin));
+  const isOwner = Boolean(user && user.role === "Dueño" && !user.isAdmin);
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -160,16 +162,31 @@ export default function Home() {
     });
   }, [restaurants, nameFilter, cuisineFilter, cityFilter]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("reservedRestaurantIds");
+    if (stored) {
+      try {
+        setReservedIds(JSON.parse(stored));
+      } catch {
+        setReservedIds([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
+  }, [reservedIds]);
+
   function toggleSave(id: number) {
     setSavedIds((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
     );
   }
 
-  function toggleReserve(id: number) {
-    setReservedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    );
+  function handleReserveClick(id: number) {
+    router.push(`/restaurant/${id}/reserve`);
   }
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
@@ -197,12 +214,18 @@ export default function Home() {
           <nav className="flex flex-wrap items-center gap-3 text-sm text-stone-100/80">
             <a href="#hero" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</a>
             <a href="#restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</a>
+            {isOwner && (
+              <Link href="/owner/my-restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">
+                My Restaurants
+              </Link>
+            )}
             <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-white/10">About Us</a>
             {isAdmin && (
               <Link href="/admin/approvals" className="rounded-full bg-amber-400/15 px-4 py-2 text-amber-200 transition hover:bg-amber-400/25">
                 Approvals
               </Link>
             )}
+            <ProfileAvatarButton />
           </nav>
         </div>
       </header>
@@ -322,7 +345,7 @@ export default function Home() {
                       <span>{savedIds.includes(restaurant.id) ? "Guardado" : "Guardar"}</span>
                     </button>
                     <button
-                      onClick={() => toggleReserve(restaurant.id)}
+                      onClick={() => handleReserveClick(restaurant.id)}
                       className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold text-amber-100 transition hover:bg-[#3f291d] ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : ""}`}
                     >
                       <img src="/icon-reservar.png" alt="Reservar" className="h-7 w-7" />
