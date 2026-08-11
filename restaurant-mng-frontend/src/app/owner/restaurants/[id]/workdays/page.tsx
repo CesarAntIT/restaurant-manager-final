@@ -26,6 +26,14 @@ export default function WorkDayPage() {
   const [quantity, setQuantity] = useState(1);
   const [searchVal, setSearchVal] = useState("");
   const [isOwnerRestaurant, setIsOwnerRestaurant] = useState(false)
+  const [isWorkdayActive, setIsWorkdayActive] = useState<boolean | null>(null)
+  const [isCheckingActive, setIsCheckingActive] = useState(false)
+  const [pendingAction, setPendingAction] = useState<"start" | "end" | null>(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [workdayNotification, setWorkdayNotification] = useState<string | null>(null)
+  const [workdayNotificationTimeout, setWorkdayNotificationTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [workdayNotificationType, setWorkdayNotificationType] = useState<'success' | 'error' | null>(null)
 
   const filteredDishes = Dishes.filter((d) =>
       d.name.toLowerCase().includes(searchVal.toLowerCase().trim())
@@ -145,12 +153,51 @@ export default function WorkDayPage() {
 
       const data = await res.json()
       if (res.ok != true) {
-        return Error(data)
+        console.error(data)
+        return false
       }
 
       console.log(data)
+      // refresh active state after toggling workday
+      try { await getActiveWorkDay(); } catch (err) { console.error(err) }
+      return true
     } catch (e) {
       console.error(e)
+      return false
+    }
+  }
+
+  async function getActiveWorkDay() {
+    if (!restaurantId) return;
+    try {
+      setIsCheckingActive(true)
+      const res = await fetch(`${API_URL}/api/workdays/active/${restaurantId}`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        // treat non-ok as no active workday, but keep null if token missing
+        setIsWorkdayActive(false);
+        setIsCheckingActive(false)
+        return;
+      }
+
+      const json = await res.json();
+      // API returns success boolean; if success true => active exists
+      if (json && typeof json.success !== "undefined") {
+        setIsWorkdayActive(Boolean(json.success));
+      } else {
+        // fallback: if message says no active
+        setIsWorkdayActive(!(json && (json.message || json.Message) && String(json.message).toLowerCase().includes("no hay jornada")));
+      }
+      setIsCheckingActive(false)
+    } catch (e) {
+      console.error(e);
+      setIsWorkdayActive(false);
+      setIsCheckingActive(false)
     }
   }
 
@@ -158,6 +205,7 @@ export default function WorkDayPage() {
     if (restaurantId && token) {
       getDishes();
       checkRestaurant();
+      getActiveWorkDay();
     }
   },[restaurantId, token]);
 
@@ -274,13 +322,92 @@ export default function WorkDayPage() {
 
             {/*Eventually this Div will become a single button instead of 2*/}
             <div className="justify-between mb-2">
-              <button className="bg-blue-500 p-2 rounded-2xl font-bold mr-3 hover:bg-blue-800" onClick={() => activateWorkDay(true)}>
-                Start Work Day
+              <button
+                className={`p-2 rounded-2xl font-bold mr-3 ${isWorkdayActive || isCheckingActive || actionLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-500 hover:bg-blue-800"}`}
+                onClick={() => { setPendingAction("start"); setShowConfirmModal(true); }}
+                disabled={Boolean(isWorkdayActive) || isCheckingActive || actionLoading}
+                aria-disabled={Boolean(isWorkdayActive) || isCheckingActive || actionLoading}
+              >
+                {actionLoading && pendingAction === "start" ? (
+                  <span className="inline-flex items-center"><span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2"/>Procesando...</span>
+                ) : (
+                  "Start Work Day"
+                )}
               </button>
-              <button className="bg-red-500 p-2 rounded-2xl font-bold hover:bg-red-800" onClick={() => activateWorkDay(false)}>
-                End Work Day
+              <button
+                className={`p-2 rounded-2xl font-bold ${isWorkdayActive && !isCheckingActive && !actionLoading ? "bg-red-500 hover:bg-red-800" : "bg-gray-400 cursor-not-allowed text-white"}`}
+                onClick={() => { setPendingAction("end"); setShowConfirmModal(true); }}
+                disabled={!isWorkdayActive || isCheckingActive || actionLoading}
+                aria-disabled={!isWorkdayActive || isCheckingActive || actionLoading}
+              >
+                {actionLoading && pendingAction === "end" ? (
+                  <span className="inline-flex items-center"><span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2"/>Procesando...</span>
+                ) : (
+                  "End Work Day"
+                )}
               </button>
             </div>
+            {isCheckingActive && (
+              <p className="text-sm text-stone-400">Comprobando estado de jornada...</p>
+            )}
+
+            {showConfirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6">
+                  <h3 className="text-lg font-semibold text-white">Confirmar acción</h3>
+                  <p className="mt-3 text-sm text-stone-300">{pendingAction === "start" ? "¿Iniciar la jornada de trabajo?" : "¿Terminar la jornada de trabajo?"}</p>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-stone-200"
+                      onClick={() => { setShowConfirmModal(false); setPendingAction(null); }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-black"
+                      onClick={async () => {
+                        if (!pendingAction) return;
+                        setActionLoading(true);
+                        const success = await activateWorkDay(pendingAction === "start");
+                        setActionLoading(false);
+                        setShowConfirmModal(false);
+                        // show toast notification
+                        if (success) {
+                          const msg = pendingAction === "start" ? "Jornada iniciada." : "Jornada finalizada.";
+                          setWorkdayNotification(msg);
+                          setWorkdayNotificationType("success");
+                          if (workdayNotificationTimeout) {
+                            clearTimeout(workdayNotificationTimeout);
+                          }
+                          const to = setTimeout(() => {
+                            setWorkdayNotification(null);
+                            setWorkdayNotificationTimeout(null);
+                            setWorkdayNotificationType(null);
+                          }, 8000);
+                          setWorkdayNotificationTimeout(to);
+                        } else {
+                          const msg = "Error al completar la acción";
+                          setWorkdayNotification(msg);
+                          setWorkdayNotificationType("error");
+                          if (workdayNotificationTimeout) {
+                            clearTimeout(workdayNotificationTimeout);
+                          }
+                          const to = setTimeout(() => {
+                            setWorkdayNotification(null);
+                            setWorkdayNotificationTimeout(null);
+                            setWorkdayNotificationType(null);
+                          }, 8000);
+                          setWorkdayNotificationTimeout(to);
+                        }
+                        setPendingAction(null);
+                      }}
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             <p>Current Started: 31/07/2026</p>
           </div>
           <hr className="mt-5 mb-5 " />
@@ -378,6 +505,35 @@ export default function WorkDayPage() {
           </div>
         </div>
       </div>
+        {workdayNotification && (
+          <div
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-3xl p-4 text-sm backdrop-blur-xl shadow-2xl ${
+              workdayNotificationType === "error"
+                ? "border border-red-500/50 bg-red-950/80 text-red-200"
+                : "border border-emerald-500/50 bg-emerald-950/80 text-emerald-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center rounded-full p-2">
+                {workdayNotificationType === "error" ? (
+                  <svg className="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M15 9L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M7 13L10.5 16.5L17 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold">{workdayNotification}</p>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
