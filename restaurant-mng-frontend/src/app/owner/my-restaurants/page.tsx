@@ -341,12 +341,20 @@ export default function MyRestaurants() {
             Mesas
           </Link>
           <br />
+          <div className="flex flex-col gap-2">
+          <Link href={`/owner/restaurants/${r.id}/workdays`} className="mb-2 bg-emerald-500/50 p-1.5 rounded-xl hover:bg-emerald-500 hover:font-bold w-20 text-center block">
+            Jornadas
+          </Link>
+          <Link href={`/owner/restaurants/${r.id}/tables`} className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20 text-center block">
+            Mesas
+          </Link>
           <button
             className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20"
             onClick={() => setToEdit(r)}
           >
             Editar
-          </button>{" "}
+          </button>
+        </div>
           <br />
           <button
             className="mt-5 bg-red-500/50 p-1.5 rounded-xl hover:bg-red-500 hover:font-bold w-20"

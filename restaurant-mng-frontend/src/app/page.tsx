@@ -26,7 +26,7 @@ type Restaurant = {
 };
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, token } = useAuthStore();
   const router = useRouter();
   const isAdmin = Boolean(user && (user.role === "Admin" || user.isAdmin));
   const isOwner = Boolean(user && user.role === "Dueño" && !user.isAdmin);
@@ -173,6 +173,44 @@ export default function Home() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    async function loadReservations() {
+      try {
+        const res = await fetch(`${API_URL}/api/reservations/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          return;
+        }
+
+        const json = await res.json();
+        const reservations: Array<{ restaurantId?: number | string; status?: string }> =
+          Array.isArray(json) ? json : json.data ?? [];
+        const reservedRestaurants = Array.from(
+          new Set(
+            reservations
+              .filter(
+                (item) =>
+                  item.restaurantId != null &&
+                  item.status !== "Cancelled" &&
+                  item.status !== "cancelled",
+              )
+              .map((item) => Number(item.restaurantId)),
+          ),
+        );
+        setReservedIds(reservedRestaurants);
+      } catch {
+        // ignore fetch failures and keep existing state
+      }
+    }
+
+    loadReservations();
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
