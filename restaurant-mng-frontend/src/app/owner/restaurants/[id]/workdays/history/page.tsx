@@ -237,7 +237,7 @@ export default function WorkDaySalesHistoryPage() {
               <label className="flex flex-col text-sm text-stone-300">
                 Desde
                 <input
-                  className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-900 outline-none"
+                  className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
@@ -246,7 +246,7 @@ export default function WorkDaySalesHistoryPage() {
               <label className="flex flex-col text-sm text-stone-300">
                 Hasta
                 <input
-                  className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-900 outline-none"
+                  className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
@@ -259,9 +259,6 @@ export default function WorkDaySalesHistoryPage() {
               >
                 Actualizar
               </button>
-            </div>
-            <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-200">
-              <span className="font-semibold text-white">Rango seleccionado:</span> {formatDisplayDate(fromDate)} - {formatDisplayDate(toDate)}
             </div>
           </div>
 
@@ -293,6 +290,34 @@ export default function WorkDaySalesHistoryPage() {
                   <p className="mt-2 text-2xl font-semibold text-white">${summary.averageRevenuePerDay.toFixed(2)}</p>
                 </div>
               </div>
+
+              {topDishes.length > 0 && (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-6 mb-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-white">Top platos</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse text-left text-sm text-stone-200">
+                      <thead>
+                        <tr>
+                          <th className="border-b border-white/10 px-4 py-3">Plato</th>
+                          <th className="border-b border-white/10 px-4 py-3">Cantidad vendida</th>
+                          <th className="border-b border-white/10 px-4 py-3">Recaudación</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topDishes.map((dish) => (
+                          <tr key={dish.dishId} className="border-b border-white/5 last:border-b-0">
+                            <td className="px-4 py-4">{dish.dishName}</td>
+                            <td className="px-4 py-4">{dish.quantitySold}</td>
+                            <td className="px-4 py-4">${dish.revenue.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {workDays.length === 0 ? (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-stone-300">No se encontraron ventas en el rango seleccionado.</div>
@@ -341,34 +366,6 @@ export default function WorkDaySalesHistoryPage() {
                       </div>
                     </section>
                   ))}
-                </div>
-              )}
-
-              {topDishes.length > 0 && (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">Top platos</h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm text-stone-200">
-                      <thead>
-                        <tr>
-                          <th className="border-b border-white/10 px-4 py-3">Plato</th>
-                          <th className="border-b border-white/10 px-4 py-3">Cantidad vendida</th>
-                          <th className="border-b border-white/10 px-4 py-3">Recaudación</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topDishes.map((dish) => (
-                          <tr key={dish.dishId} className="border-b border-white/5 last:border-b-0">
-                            <td className="px-4 py-4">{dish.dishName}</td>
-                            <td className="px-4 py-4">{dish.quantitySold}</td>
-                            <td className="px-4 py-4">${dish.revenue.toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
               )}
             </>
