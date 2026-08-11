@@ -4,13 +4,22 @@ import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
 type Dish = {
   id: number;
   name: string;
   description: string;
   price: number;
+};
+
+type WorkDay = {
+  id: number;
+  startDate: string;
+  endDate?: string | null;
+  status: string;
 };
 
 export default function WorkDayPage() {
@@ -23,21 +32,31 @@ export default function WorkDayPage() {
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [searchVal, setSearchVal] = useState("");
+  const [workDays, setWorkDays] = useState<WorkDay[]>([]);
+  const [dateFilter, setDateFilter] = useState("");
   const [isOwnerRestaurant, setIsOwnerRestaurant] = useState(false)
 
   const filteredDishes = Dishes.filter((d) =>
       d.name.toLowerCase().includes(searchVal.toLowerCase().trim())
     );
 
+  const filteredWorkDays = workDays.filter((workDay) => {
+    if (!dateFilter) return true;
+    const targetDate = new Date(dateFilter).toISOString().slice(0, 10);
+    const startDate = workDay.startDate ? new Date(workDay.startDate).toISOString().slice(0, 10) : "";
+    const endDate = workDay.endDate ? new Date(workDay.endDate).toISOString().slice(0, 10) : "";
+    return startDate === targetDate || endDate === targetDate;
+  });
+
   //Client Side Functions
-  function changeQuantity(e) {
+  function changeQuantity(e: ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
 
     if (val === "") {
       setQuantity(0);
       return;
     }
-    if (val < 0) {
+    if (Number(val) < 0) {
       setQuantity(0);
       return;
     }
@@ -46,15 +65,16 @@ export default function WorkDayPage() {
   function RefreshPage() {
     setQuantity(0);
     setSelectedDish(null);
+    setSearchVal("");
     getDishes();
-    setSearchVal("")
+    getWorkDaysHistory();
   }
 
   //API calling Functions
   async function getDishes() {
     try {
       const res = await fetch(
-        `https://localhost:7188/api/restaurants/${restaurantId}/dishes`,
+        `${API_URL}/api/restaurants/${restaurantId}/dishes`,
         {
           headers: {
             Accept: "text/plain",
@@ -68,7 +88,7 @@ export default function WorkDayPage() {
       }
 
       const data = await res.json();
-      const dishes: Dish[] = data.map((item) => ({
+      const dishes: Dish[] = (data as any[]).map((item: any) => ({
         id: item.id,
         name: item.name,
         description: item.description,
@@ -83,7 +103,7 @@ export default function WorkDayPage() {
   async function postSale() {
     try {
       const res = await fetch(
-        `https://localhost:7188/api/workdays/sale?dishId=${selectedDish?.id}&quantity=${quantity}`,
+        `${API_URL}/api/workdays/sale?dishId=${selectedDish?.id}&quantity=${quantity}`,
         {
           method: "POST",
           headers: {
@@ -106,7 +126,7 @@ export default function WorkDayPage() {
   }
   async function checkRestaurant() {
     try {
-      const res = await fetch(`https://localhost:7188/api/restaurants/${restaurantId}`);
+      const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}`);
       if (res.ok != true) {
         const data = await res.json();
         return Error(data)
@@ -126,14 +146,14 @@ export default function WorkDayPage() {
     try {
       let res
       if (bool) {
-        res = await fetch(`https://localhost:7188/api/workdays/open/${restaurantId}`, {
+        res = await fetch(`${API_URL}/api/workdays/open/${restaurantId}`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
       } else {
-        res = await fetch(`https://localhost:7188/api/workdays/close/${restaurantId}`, {
+        res = await fetch(`${API_URL}/api/workdays/close/${restaurantId}`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`
@@ -152,10 +172,43 @@ export default function WorkDayPage() {
     }
   }
 
+  async function getWorkDaysHistory() {
+    try {
+      const res = await fetch(`${API_URL}/api/workdays/history/${restaurantId}`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok !== true) {
+        return;
+      }
+
+      const json = await res.json();
+      const workDayArray = Array.isArray(json) ? json : json?.data ?? [];
+      if (!Array.isArray(workDayArray)) return;
+
+      const workDaysData: WorkDay[] = workDayArray.map((item: any) => ({
+        id: item.id,
+        startDate: item.startedAt ?? item.openedAt ?? item.startDate ?? "",
+        endDate: item.endedAt ?? item.closedAt ?? item.endDate ?? null,
+        status:
+          item.status ||
+          (item.endedAt || item.closedAt || item.endDate ? "Cerrado" : "Abierto"),
+      }));
+
+      setWorkDays(workDaysData);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   useEffect(() => {
     if (restaurantId && token) {
       getDishes();
       checkRestaurant();
+      getWorkDaysHistory();
     }
   },[restaurantId, token]);
 
@@ -279,6 +332,66 @@ export default function WorkDayPage() {
             <p>Current Started: 31/07/2026</p>
           </div>
           <hr className="mt-5 mb-5 " />
+          <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Historial de Work Days</h2>
+                <p className="text-sm text-stone-400">Filtra por fecha de inicio o fin</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-900 outline-none"
+                />
+                <button
+                  type="button"
+                  className="rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-black hover:bg-amber-600"
+                  onClick={() => setDateFilter("")}
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              {filteredWorkDays.length === 0 ? (
+                <p className="text-sm text-stone-400">No se encontraron Work Days para esta fecha.</p>
+              ) : (
+                filteredWorkDays.map((workDay) => (
+                  <div
+                    key={workDay.id}
+                    className="rounded-3xl border border-white/10 bg-[#121212]/80 p-4"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+                      <div>
+                        <p className="text-sm text-stone-400">ID: {workDay.id}</p>
+                        <p className="text-base font-semibold text-white">
+                          {new Date(workDay.startDate).toLocaleDateString("es-ES", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-sm text-stone-400">
+                          Fin: {workDay.endDate
+                            ? new Date(workDay.endDate).toLocaleDateString("es-ES", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : "En progreso"}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                        {workDay.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
           <div>
             <h2>Add Work Day Sales</h2>
             <div>
