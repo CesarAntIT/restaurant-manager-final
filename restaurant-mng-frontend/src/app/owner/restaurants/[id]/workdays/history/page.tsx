@@ -8,15 +8,36 @@ import { useEffect, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
-type SaleHistory = {
-  id: number;
+type WorkDaySale = {
+  dishId: number;
   dishName: string;
-  quantity: number;
-  price: number;
-  total: number;
-  saleDate: string;
-  workDayDate: string;
-  workDayStatus: string;
+  quantitySold: number;
+  revenue: number;
+};
+
+type WorkDayHistory = {
+  workDayId: number;
+  restaurantId: number;
+  date: string;
+  timeClose: string;
+  totalRevenue: number;
+  totalItemsSold: number;
+  dishes: WorkDaySale[];
+};
+
+type SalesHistoryResponse = {
+  success: boolean;
+  data: {
+    restaurantId: number;
+    from: string;
+    to: string;
+    totalRevenue: number;
+    totalItemsSold: number;
+    workDaysCount: number;
+    averageRevenuePerDay: number;
+    dailyBreakdown: WorkDayHistory[];
+    topDishes: WorkDaySale[];
+  };
 };
 
 function formatDateInput(value: Date) {
@@ -42,7 +63,14 @@ export default function WorkDaySalesHistoryPage() {
 
   const { user, token, isAuthenticated } = useAuthStore();
   const isOwner = Boolean(user && user.role == "Dueño" && !user.isAdmin);
-  const [sales, setSales] = useState<SaleHistory[]>([]);
+  const [workDays, setWorkDays] = useState<WorkDayHistory[]>([]);
+  const [topDishes, setTopDishes] = useState<WorkDaySale[]>([]);
+  const [summary, setSummary] = useState({
+    totalRevenue: 0,
+    totalItemsSold: 0,
+    workDaysCount: 0,
+    averageRevenuePerDay: 0,
+  });
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
@@ -51,15 +79,6 @@ export default function WorkDaySalesHistoryPage() {
   const [toDate, setToDate] = useState(() => formatDateInput(new Date()));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const salesByWorkDay = useMemo(() => {
-    return sales.reduce((acc, item) => {
-      const key = item.workDayDate ? new Date(item.workDayDate).toLocaleDateString("es-ES") : "Sin fecha";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(item);
-      return acc;
-    }, {} as Record<string, SaleHistory[]>);
-  }, [sales]);
 
   async function loadSalesHistory() {
     if (!restaurantId || !token) return;
@@ -83,49 +102,32 @@ export default function WorkDaySalesHistoryPage() {
         const json = await res.json().catch(() => null);
         const message = json?.Error || json?.error || json?.message || "Error al cargar el historial";
         setError(message);
-        setSales([]);
+        setWorkDays([]);
+        setTopDishes([]);
         return;
       }
 
-      const json = await res.json();
-      if (json?.HasError) {
-        setError(json.Error || "Error al cargar el historial");
-        setSales([]);
+      const json = (await res.json()) as SalesHistoryResponse;
+      if (!json?.success) {
+        setError((json as any)?.Error || (json as any)?.error || "Error al cargar el historial");
+        setWorkDays([]);
+        setTopDishes([]);
         return;
       }
 
-      const saleArray = Array.isArray(json) ? json : json?.data ?? json?.sales ?? [];
-      if (!Array.isArray(saleArray)) {
-        setError("Respuesta de ventas inválida");
-        setSales([]);
-        return;
-      }
-
-      const parsedSales: SaleHistory[] = saleArray.map((item: any) => {
-        const saleDate = item.saleDate ?? item.createdAt ?? item.date ?? item.registeredAt ?? item.timestamp ?? "";
-        const workDayDate =
-          item.workDay?.startedAt ?? item.workDay?.openedAt ?? item.workDayStart ?? item.workDayDate ?? item.date ?? saleDate ?? "";
-        const quantity = item.quantity ?? item.qty ?? 1;
-        const price = item.price ?? item.unitPrice ?? item.amount ?? 0;
-        const total = item.total ?? item.totalPrice ?? item.amount ?? quantity * price;
-        const dishName = item.dish?.name ?? item.dishName ?? item.productName ?? item.name ?? "Venta";
-
-        return {
-          id: item.id ?? Math.floor(Math.random() * 1000000),
-          dishName,
-          quantity,
-          price,
-          total,
-          saleDate: saleDate ?? "",
-          workDayDate,
-          workDayStatus: item.workDay?.status ?? item.status ?? "Pendiente",
-        };
+      const data = json.data;
+      setSummary({
+        totalRevenue: data.totalRevenue ?? 0,
+        totalItemsSold: data.totalItemsSold ?? 0,
+        workDaysCount: data.workDaysCount ?? 0,
+        averageRevenuePerDay: data.averageRevenuePerDay ?? 0,
       });
-
-      setSales(parsedSales);
+      setWorkDays(Array.isArray(data.dailyBreakdown) ? data.dailyBreakdown : []);
+      setTopDishes(Array.isArray(data.topDishes) ? data.topDishes : []);
     } catch (e) {
       setError("Error de conexión al cargar el historial");
-      setSales([]);
+      setWorkDays([]);
+      setTopDishes([]);
     } finally {
       setIsLoading(false);
     }
@@ -258,6 +260,9 @@ export default function WorkDaySalesHistoryPage() {
                 Actualizar
               </button>
             </div>
+            <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-200">
+              <span className="font-semibold text-white">Rango seleccionado:</span> {formatDisplayDate(fromDate)} - {formatDisplayDate(toDate)}
+            </div>
           </div>
 
           {error ? (
@@ -268,52 +273,105 @@ export default function WorkDaySalesHistoryPage() {
 
           {isLoading ? (
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-stone-300">Cargando historial...</div>
-          ) : Object.keys(salesByWorkDay).length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-stone-300">No se encontraron ventas en el rango seleccionado.</div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(salesByWorkDay).map(([groupDate, groupSales]) => {
-                const groupTotal = groupSales.reduce((sum, item) => sum + item.total, 0);
-                return (
-                  <section key={groupDate} className="rounded-3xl border border-white/10 bg-[#121212]/80 p-6">
-                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm text-stone-400">Workday</p>
-                        <p className="text-2xl font-semibold text-white">{groupDate}</p>
-                        <p className="text-sm text-stone-400">{formatDisplayDate(groupSales[0].saleDate)}</p>
+            <>
+              <div className="grid gap-4 sm:grid-cols-4 mb-6">
+                <div className="rounded-3xl border border-white/10 bg-[#121212]/80 p-5">
+                  <p className="text-sm text-stone-400">Ingresos totales</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">${summary.totalRevenue.toFixed(2)}</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-[#121212]/80 p-5">
+                  <p className="text-sm text-stone-400">Items vendidos</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{summary.totalItemsSold}</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-[#121212]/80 p-5">
+                  <p className="text-sm text-stone-400">Work days</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{summary.workDaysCount}</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-[#121212]/80 p-5">
+                  <p className="text-sm text-stone-400">Promedio por día</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">${summary.averageRevenuePerDay.toFixed(2)}</p>
+                </div>
+              </div>
+
+              {workDays.length === 0 ? (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-stone-300">No se encontraron ventas en el rango seleccionado.</div>
+              ) : (
+                <div className="space-y-6">
+                  {workDays.map((workDay) => (
+                    <section key={workDay.workDayId} className="rounded-3xl border border-white/10 bg-[#121212]/80 p-6">
+                      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm text-stone-400">Workday #{workDay.workDayId}</p>
+                          <p className="text-2xl font-semibold text-white">{formatDisplayDate(workDay.date)}</p>
+                          <p className="text-sm text-stone-400">Cierre: {formatDisplayDate(workDay.timeClose)}</p>
+                        </div>
+                        <div className="space-y-2 text-right">
+                          <p className="text-sm text-stone-400">Total items: {workDay.totalItemsSold}</p>
+                          <p className="text-lg font-semibold text-white">Total: ${workDay.totalRevenue.toFixed(2)}</p>
+                        </div>
                       </div>
-                      <div className="rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200">
-                        Total: ${groupTotal.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full border-collapse text-left text-sm text-stone-200">
-                        <thead>
-                          <tr>
-                            <th className="border-b border-white/10 px-4 py-3">Plato</th>
-                            <th className="border-b border-white/10 px-4 py-3">Cantidad</th>
-                            <th className="border-b border-white/10 px-4 py-3">Precio unidad</th>
-                            <th className="border-b border-white/10 px-4 py-3">Total</th>
-                            <th className="border-b border-white/10 px-4 py-3">Fecha venta</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {groupSales.map((sale) => (
-                            <tr key={sale.id} className="border-b border-white/5 last:border-b-0">
-                              <td className="px-4 py-4">{sale.dishName}</td>
-                              <td className="px-4 py-4">{sale.quantity}</td>
-                              <td className="px-4 py-4">${sale.price.toFixed(2)}</td>
-                              <td className="px-4 py-4">${sale.total.toFixed(2)}</td>
-                              <td className="px-4 py-4">{formatDisplayDate(sale.saleDate)}</td>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border-collapse text-left text-sm text-stone-200">
+                          <thead>
+                            <tr>
+                              <th className="border-b border-white/10 px-4 py-3">Plato</th>
+                              <th className="border-b border-white/10 px-4 py-3">Cantidad</th>
+                              <th className="border-b border-white/10 px-4 py-3">Recaudación</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
+                          </thead>
+                          <tbody>
+                            {workDay.dishes.length === 0 ? (
+                              <tr>
+                                <td colSpan={3} className="px-4 py-4 text-sm text-stone-400">
+                                  No hay platos vendidos en este workday.
+                                </td>
+                              </tr>
+                            ) : (
+                              workDay.dishes.map((dish) => (
+                                <tr key={dish.dishId} className="border-b border-white/5 last:border-b-0">
+                                  <td className="px-4 py-4">{dish.dishName}</td>
+                                  <td className="px-4 py-4">{dish.quantitySold}</td>
+                                  <td className="px-4 py-4">${dish.revenue.toFixed(2)}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+
+              {topDishes.length > 0 && (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-white">Top platos</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse text-left text-sm text-stone-200">
+                      <thead>
+                        <tr>
+                          <th className="border-b border-white/10 px-4 py-3">Plato</th>
+                          <th className="border-b border-white/10 px-4 py-3">Cantidad vendida</th>
+                          <th className="border-b border-white/10 px-4 py-3">Recaudación</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topDishes.map((dish) => (
+                          <tr key={dish.dishId} className="border-b border-white/5 last:border-b-0">
+                            <td className="px-4 py-4">{dish.dishName}</td>
+                            <td className="px-4 py-4">{dish.quantitySold}</td>
+                            <td className="px-4 py-4">${dish.revenue.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
