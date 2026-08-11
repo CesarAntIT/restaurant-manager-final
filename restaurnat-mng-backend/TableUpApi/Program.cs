@@ -43,6 +43,8 @@ builder.Services.AddScoped<IDishIngredientRepository, DishIngredientRepository>(
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddHttpClient<IAIService, GeminiService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
+builder.Services.AddScoped<IPredictionIARepository, PredictionIARepository>();
+builder.Services.AddScoped<IPredictionService, PredictionService>();
 
 builder.Services.AddCors(options =>
 {
