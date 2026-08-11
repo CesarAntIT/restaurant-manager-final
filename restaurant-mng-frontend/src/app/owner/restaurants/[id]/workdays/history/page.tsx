@@ -323,7 +323,7 @@ export default function WorkDaySalesHistoryPage() {
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-stone-300">No se encontraron ventas en el rango seleccionado.</div>
               ) : (
                 <div className="space-y-6">
-                  {workDays.map((workDay) => (
+                  {workDays.toReversed().map((workDay) => (
                     <section key={workDay.workDayId} className="rounded-3xl border border-white/10 bg-[#121212]/80 p-6">
                       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>

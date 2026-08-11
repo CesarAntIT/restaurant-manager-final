@@ -486,7 +486,7 @@ export default function WorkDayPage() {
                   </p>
                 </div>
                 {selectedDish != null ? (
-                  <button className="text-2xl mt-3 p-3 bg-green-700 hover:bg-green-950 font-bold rounded-2xl" onClick={postSale}>
+                  <button className="text-2xl mt-3 p-3 bg-green-700 hover:bg-green-950 font-bold rounded-2xl" onClick={handleConfirmSale}>
                     Confirmar Venta
                   </button>
                 ) : (
