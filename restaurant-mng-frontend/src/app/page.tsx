@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/authStore";
@@ -37,6 +37,7 @@ export default function Home() {
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [reservedIds, setReservedIds] = useState<number[]>([]);
   const [pendingIds, setPendingIds] = useState<number[]>([]);
+  const initializedSavedRef = useRef(false);
   const [nameFilter, setNameFilter] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
@@ -183,7 +184,15 @@ export default function Home() {
         setSavedIds([]);
       }
     }
+
+    initializedSavedRef.current = true;
   }, []);
+
+  useEffect(() => {
+    if (!initializedSavedRef.current || typeof window === "undefined") return;
+    window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
+    window.localStorage.setItem("savedRestaurantIds", JSON.stringify(savedIds));
+  }, [reservedIds, savedIds]);
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
