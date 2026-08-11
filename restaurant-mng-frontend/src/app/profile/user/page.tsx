@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  API_URL,
   LoadingScreen,
   PersonalInfoCard,
   ProfileHeader,
@@ -44,6 +45,13 @@ export default function ClientProfilePage() {
     "Postres",
   ]);
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
+  const [savedRestaurantIds, setSavedRestaurantIds] = useState<number[]>([]);
+  const [savedRestaurants, setSavedRestaurants] = useState<{
+    id: number;
+    name: string;
+    category: string;
+    address: string;
+  }[]>([]);
 
   // Redirect owners that land on this route to their own page.
   useEffect(() => {
@@ -97,9 +105,39 @@ export default function ClientProfilePage() {
             signal: controller.signal,
           },
         );
-        setReservations(
-          Array.isArray(reservationsJson) ? reservationsJson : [],
-        );
+        const reservationsData = Array.isArray(reservationsJson) ? reservationsJson : [];
+        setReservations(reservationsData);
+
+        const savedStored = typeof window !== "undefined"
+          ? window.localStorage.getItem("savedRestaurantIds")
+          : null;
+        const savedIdsArray = savedStored ? JSON.parse(savedStored) : [];
+        const savedIds = Array.isArray(savedIdsArray) ? savedIdsArray : [];
+        setSavedRestaurantIds(savedIds);
+        setSavedRestaurants([]);
+
+        if (savedIds.length > 0) {
+          const restaurantList = await Promise.all(
+            savedIds.map(async (restaurantId: number) => {
+              const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}`);
+              if (!res.ok) return null;
+              const json = await res.json();
+              const data = json?.data ?? json;
+              return {
+                id: restaurantId,
+                name: data?.name ?? `Restaurante ${restaurantId}`,
+                category: data?.category ?? "Desconocida",
+                address: data?.address ?? "Dirección no disponible",
+              };
+            }),
+          );
+          setSavedRestaurants(restaurantList.filter(Boolean) as {
+            id: number;
+            name: string;
+            category: string;
+            address: string;
+          }[]);
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           setApiMessage(
@@ -239,6 +277,46 @@ export default function ClientProfilePage() {
             favoriteCategories={favoriteCategories}
             reservations={reservations}
           />
+
+          <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
+            <div className="mb-5 border-b border-[#2d180d]/70 pb-4">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#d97706]">
+                Restaurantes guardados
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-white">
+                Tus favoritos
+              </h2>
+            </div>
+
+            {savedRestaurants.length === 0 ? (
+              <div className="rounded-xl border border-[#2d180d] bg-[#120a05] p-5 text-center text-sm text-stone-300">
+                No tienes restaurantes guardados aún.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedRestaurants.map((restaurant) => (
+                  <div
+                    key={restaurant.id}
+                    className="rounded-2xl border border-[#2d180d] bg-[#120904]/80 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{restaurant.name}</h3>
+                        <p className="mt-1 text-sm text-stone-400">{restaurant.category}</p>
+                        <p className="mt-2 text-sm text-stone-300">{restaurant.address}</p>
+                      </div>
+                      <Link
+                        href={`/restaurant/${restaurant.id}`}
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:bg-white/10"
+                      >
+                        Ver
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
             <div className="mb-5 border-b border-[#2d180d]/70 pb-4">

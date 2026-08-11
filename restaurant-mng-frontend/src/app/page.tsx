@@ -36,6 +36,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [reservedIds, setReservedIds] = useState<number[]>([]);
+  const [pendingIds, setPendingIds] = useState<number[]>([]);
   const [nameFilter, setNameFilter] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
@@ -164,12 +165,22 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("reservedRestaurantIds");
-    if (stored) {
+
+    const reservedStored = window.localStorage.getItem("reservedRestaurantIds");
+    if (reservedStored) {
       try {
-        setReservedIds(JSON.parse(stored));
+        setReservedIds(JSON.parse(reservedStored));
       } catch {
         setReservedIds([]);
+      }
+    }
+
+    const savedStored = window.localStorage.getItem("savedRestaurantIds");
+    if (savedStored) {
+      try {
+        setSavedIds(JSON.parse(savedStored));
+      } catch {
+        setSavedIds([]);
       }
     }
   }, []);
@@ -191,19 +202,30 @@ export default function Home() {
         const json = await res.json();
         const reservations: Array<{ restaurantId?: number | string; status?: string }> =
           Array.isArray(json) ? json : json.data ?? [];
-        const reservedRestaurants = Array.from(
+        const confirmedRestaurants = Array.from(
           new Set(
             reservations
               .filter(
                 (item) =>
                   item.restaurantId != null &&
-                  item.status !== "Cancelled" &&
-                  item.status !== "cancelled",
+                  item.status?.toLowerCase() === "confirmed",
               )
               .map((item) => Number(item.restaurantId)),
           ),
         );
-        setReservedIds(reservedRestaurants);
+        const pendingRestaurants = Array.from(
+          new Set(
+            reservations
+              .filter(
+                (item) =>
+                  item.restaurantId != null &&
+                  item.status?.toLowerCase() === "pending",
+              )
+              .map((item) => Number(item.restaurantId)),
+          ),
+        );
+        setReservedIds(confirmedRestaurants);
+        setPendingIds(pendingRestaurants);
       } catch {
         // ignore fetch failures and keep existing state
       }
@@ -215,7 +237,8 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
-  }, [reservedIds]);
+    window.localStorage.setItem("savedRestaurantIds", JSON.stringify(savedIds));
+  }, [reservedIds, savedIds]);
 
   function toggleSave(id: number) {
     setSavedIds((current) =>
@@ -384,10 +407,10 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => handleReserveClick(restaurant.id)}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold text-amber-100 transition hover:bg-[#3f291d] ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : ""}`}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold transition ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100 hover:bg-[#3f291d]" : pendingIds.includes(restaurant.id) ? "bg-cyan-500/20 text-cyan-100 hover:bg-cyan-400/30" : "text-amber-100 hover:bg-[#3f291d]"}`}
                     >
                       <img src="/icon-reservar.png" alt="Reservar" className="h-7 w-7" />
-                      <span>{reservedIds.includes(restaurant.id) ? "Reservado" : "Reservar"}</span>
+                      <span>{reservedIds.includes(restaurant.id) ? "Reservado" : pendingIds.includes(restaurant.id) ? "Reservando..." : "Reservar"}</span>
                     </button>
                   </div>
                 </div>
