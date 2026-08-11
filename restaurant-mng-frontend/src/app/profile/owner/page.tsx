@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   LoadingScreen,
   PersonalInfoCard,
@@ -17,6 +17,25 @@ import {
   mapRestaurantFromApi,
   useProfileSession,
 } from "../_shared";
+type ApiRecord = Record<string, unknown>;
+
+type OwnerReservation = {
+  id: number;
+  restaurantId?: number;
+  restaurantName: string;
+  table: string;
+  date: string;
+  guests: number;
+  status: "Pendiente" | "Confirmada" | "Cancelada" | "Atendida" | "Otro";
+};
+
+type OwnerReviewSummary = {
+  restaurantId?: number;
+  restaurantName: string;
+  averageRating: number;
+  totalReviews: number;
+  latestComment?: string;
+};
 
 export default function OwnerProfilePage() {
   const {
@@ -65,6 +84,15 @@ export default function OwnerProfilePage() {
     },
   ]);
   const [toEdit, setToEdit] = useState(false);
+  const [reservationRows, setReservationRows] = useState<OwnerReservation[]>([]);
+  const [reviewSummaries, setReviewSummaries] = useState<OwnerReviewSummary[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsMessage, setInsightsMessage] = useState("");
+
+  const restaurantIdsKey = useMemo(
+    () => restaurantRows.map((item) => item.id).filter(Boolean).join(","),
+    [restaurantRows],
+  );
 
   // Redirect clients that land on this route to their own page.
   useEffect(() => {
@@ -126,6 +154,95 @@ export default function OwnerProfilePage() {
     sessionLoaded,
     setApiMessage,
     setLoadingApi,
+    token,
+    userView.isOwner,
+  ]);
+
+  useEffect(() => {
+    if (!sessionLoaded || !isAuthenticated || !token || !userView.isOwner) {
+      return;
+    }
+
+    const restaurantsWithId = restaurantRows.filter(
+      (item): item is RestaurantRow & { id: number } => typeof item.id === "number",
+    );
+
+    if (restaurantsWithId.length === 0) {
+      Promise.resolve().then(() => {
+        setReservationRows([]);
+        setReviewSummaries([]);
+        setInsightsMessage("Agrega o carga un restaurante para ver reservas y ratings.");
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadOwnerInsights() {
+      setInsightsLoading(true);
+      setInsightsMessage("");
+
+      const reservationResults = await Promise.allSettled(
+        restaurantsWithId.map(async (item) => {
+          const json = await apiRequest(
+            `/api/reservations/restaurant/${item.id}`,
+            token as string,
+            { signal: controller.signal },
+          );
+          return extractApiList(json).map((reservation) =>
+            mapReservationFromApi(reservation, item),
+          );
+        }),
+      );
+
+      const reviewResults = await Promise.allSettled(
+        restaurantsWithId.map(async (item) => {
+          const json = await apiRequest(
+            `/api/reviews/restaurant/${item.id}`,
+            token as string,
+            { signal: controller.signal },
+          );
+          return mapReviewSummaryFromApi(json, item);
+        }),
+      );
+
+      if (controller.signal.aborted) return;
+
+      setReservationRows(
+        reservationResults.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : [],
+        ),
+      );
+      setReviewSummaries(
+        reviewResults.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
+        ),
+      );
+
+      const hasRejected = [...reservationResults, ...reviewResults].some(
+        (result) => result.status === "rejected",
+      );
+      setInsightsMessage(
+        hasRejected
+          ? "Algunas metricas no estan disponibles desde la API todavia."
+          : "Resumen actualizado desde la API.",
+      );
+      setInsightsLoading(false);
+    }
+
+    loadOwnerInsights().catch(() => {
+      if (!controller.signal.aborted) {
+        setInsightsMessage("No se pudieron cargar las metricas del dashboard.");
+        setInsightsLoading(false);
+      }
+    });
+
+    return () => controller.abort();
+  }, [
+    isAuthenticated,
+    restaurantIdsKey,
+    restaurantRows,
+    sessionLoaded,
     token,
     userView.isOwner,
   ]);
@@ -334,6 +451,13 @@ export default function OwnerProfilePage() {
             loadingApi={loadingApi}
             apiMessage=""
           />
+          <OwnerDashboardSummary
+            restaurants={restaurantRows}
+            reservations={reservationRows}
+            reviews={reviewSummaries}
+            loading={insightsLoading}
+            message={insightsMessage}
+          />
 
           {/*<OwnerManagementPanel
             message={ownerMessage}
@@ -377,6 +501,344 @@ export default function OwnerProfilePage() {
   );
 }
 
+function OwnerDashboardSummary({
+  restaurants,
+  reservations,
+  reviews,
+  loading,
+  message,
+}: {
+  restaurants: RestaurantRow[];
+  reservations: OwnerReservation[];
+  reviews: OwnerReviewSummary[];
+  loading: boolean;
+  message: string;
+}) {
+  const pendingRestaurants = restaurants.filter(
+    (item) => item.status === "Pendiente",
+  ).length;
+  const approvedRestaurants = restaurants.filter(
+    (item) => item.status === "Aprobado",
+  ).length;
+  const pendingReservations = reservations.filter(
+    (item) => item.status === "Pendiente",
+  ).length;
+  const confirmedReservations = reservations.filter(
+    (item) => item.status === "Confirmada",
+  ).length;
+  const cancelledReservations = reservations.filter(
+    (item) => item.status === "Cancelada",
+  ).length;
+  const attendedReservations = reservations.filter(
+    (item) => item.status === "Atendida",
+  ).length;
+  const totalReviews = reviews.reduce((sum, item) => sum + item.totalReviews, 0);
+  const averageRating = totalReviews
+    ? reviews.reduce(
+        (sum, item) => sum + item.averageRating * item.totalReviews,
+        0,
+      ) / totalReviews
+    : 0;
+  const topRestaurants = [...reviews]
+    .sort((a, b) => b.averageRating - a.averageRating)
+    .slice(0, 3);
+  const nextReservations = [...reservations]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 4);
+
+  return (
+    <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
+      <div className="mb-5 flex flex-col gap-3 border-b border-[#2d180d]/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#d97706]">
+            Dashboard del dueno
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-white">
+            Resumen de reservas, estados y ratings
+          </h2>
+          <p className="mt-2 text-xs leading-5 text-stone-400">
+            Vista rapida de actividad conectada a la API por restaurante.
+          </p>
+        </div>
+        <span className="rounded-lg border border-amber-700/40 bg-[#120904] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300">
+          {loading ? "Cargando..." : message || "Listo"}
+        </span>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <SummaryMetric
+          label="Reservas totales"
+          value={String(reservations.length)}
+          detail={`${confirmedReservations} confirmadas`}
+          tone="text-amber-300"
+        />
+        <SummaryMetric
+          label="Rating promedio"
+          value={averageRating ? averageRating.toFixed(1) : "0.0"}
+          detail={`${totalReviews} resenas`}
+          tone="text-emerald-300"
+        />
+        <SummaryMetric
+          label="Restaurantes activos"
+          value={String(approvedRestaurants)}
+          detail={`${pendingRestaurants} pendientes`}
+          tone="text-sky-300"
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+        <div className="rounded-lg border border-[#2d180d] bg-[#120904]/80 p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#fbbf24]">
+            Estados de reservas
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <StatusPill label="Pendientes" value={pendingReservations} />
+            <StatusPill label="Confirmadas" value={confirmedReservations} />
+            <StatusPill label="Canceladas" value={cancelledReservations} />
+            <StatusPill label="Atendidas" value={attendedReservations} />
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-[#2d180d] bg-[#120904]/80 p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#fbbf24]">
+            Proximas reservas
+          </p>
+          <div className="mt-4 grid gap-2">
+            {nextReservations.length > 0 ? (
+              nextReservations.map((item) => (
+                <div
+                  key={item.id}
+                  className="grid gap-2 rounded-lg border border-[#2d180d] bg-[#180e08] p-3 sm:grid-cols-[1fr_auto] sm:items-center"
+                >
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {item.restaurantName}
+                    </p>
+                    <p className="text-xs text-stone-400">
+                      Mesa {item.table} - {formatDashboardDate(item.date)} - {item.guests} personas
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-amber-700/40 px-3 py-1 text-xs font-bold text-amber-300">
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="rounded-lg border border-[#2d180d] bg-[#180e08] p-3 text-xs text-stone-400">
+                Aun no hay reservas registradas para tus restaurantes.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-[#2d180d] bg-[#120904]/80 p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#fbbf24]">
+            Estados de restaurantes
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <StatusPill label="Total" value={restaurants.length} />
+            <StatusPill label="Aprobados" value={approvedRestaurants} />
+            <StatusPill label="Pendientes" value={pendingRestaurants} />
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-[#2d180d] bg-[#120904]/80 p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#fbbf24]">
+            Ratings por restaurante
+          </p>
+          <div className="mt-4 grid gap-2">
+            {topRestaurants.length > 0 ? (
+              topRestaurants.map((item) => (
+                <div
+                  key={`${item.restaurantId}-${item.restaurantName}`}
+                  className="rounded-lg border border-[#2d180d] bg-[#180e08] p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-white">
+                      {item.restaurantName}
+                    </p>
+                    <span className="font-mono text-sm font-bold text-emerald-300">
+                      {item.averageRating.toFixed(1)}/5
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-400">
+                    {item.totalReviews} resenas
+                    {item.latestComment ? ` - ${item.latestComment}` : ""}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="rounded-lg border border-[#2d180d] bg-[#180e08] p-3 text-xs text-stone-400">
+                Aun no hay ratings disponibles para tus restaurantes.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SummaryMetric({
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-lg border border-[#2d180d] bg-[#120904]/80 p-4">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-stone-500">
+        {label}
+      </p>
+      <p className={`mt-2 text-3xl font-black ${tone}`}>{value}</p>
+      <p className="mt-1 text-xs text-stone-400">{detail}</p>
+    </div>
+  );
+}
+
+function StatusPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-[#2d180d] bg-[#180e08] px-3 py-2">
+      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-stone-400">
+        {label}
+      </span>
+      <span className="text-lg font-black text-amber-300">{value}</span>
+    </div>
+  );
+}
+
+function isApiRecord(value: unknown): value is ApiRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function toApiRecord(value: unknown): ApiRecord {
+  return isApiRecord(value) ? value : {};
+}
+
+function getApiValue(record: ApiRecord, ...keys: string[]) {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) return record[key];
+  }
+  return undefined;
+}
+
+function getApiString(value: unknown, fallback = "") {
+  return value === undefined || value === null ? fallback : String(value);
+}
+
+function getApiNumber(value: unknown, fallback = 0) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
+function extractApiList(payload: unknown): ApiRecord[] {
+  const record = toApiRecord(payload);
+  const data = record.data;
+  const dataRecord = toApiRecord(data);
+  const reservations = dataRecord.reservations;
+  const directReservations = record.reservations;
+
+  if (Array.isArray(payload)) return payload.filter(isApiRecord);
+  if (Array.isArray(data)) return data.filter(isApiRecord);
+  if (Array.isArray(reservations)) return reservations.filter(isApiRecord);
+  if (Array.isArray(directReservations)) return directReservations.filter(isApiRecord);
+  return [];
+}
+
+function mapReservationFromApi(
+  item: unknown,
+  restaurant: RestaurantRow,
+): OwnerReservation {
+  const record = toApiRecord(item);
+
+  return {
+    id: getApiNumber(getApiValue(record, "id", "Id"), Date.now()),
+    restaurantId: getApiNumber(
+      getApiValue(record, "restaurantId", "RestaurantId"),
+      restaurant.id ?? 0,
+    ),
+    restaurantName: restaurant.name,
+    table: getApiString(
+      getApiValue(record, "numberMesa", "NumberMesa", "tableId", "TableId"),
+      "N/A",
+    ),
+    date: getApiString(
+      getApiValue(
+        record,
+        "dateTimeReservation",
+        "DateTimeReservation",
+        "createdAt",
+        "CreatedAt",
+      ),
+    ),
+    guests: getApiNumber(getApiValue(record, "peopleCount", "PeopleCount")),
+    status: mapReservationStatus(getApiValue(record, "status", "Status")),
+  };
+}
+
+function mapReservationStatus(status: unknown): OwnerReservation["status"] {
+  const normalized = String(status ?? "").toLowerCase();
+  if (normalized === "1" || normalized.includes("pending")) return "Pendiente";
+  if (normalized === "2" || normalized.includes("confirm")) return "Confirmada";
+  if (normalized === "3" || normalized.includes("cancel")) return "Cancelada";
+  if (normalized === "4" || normalized.includes("attend")) return "Atendida";
+  return "Otro";
+}
+
+function mapReviewSummaryFromApi(
+  payload: unknown,
+  restaurant: RestaurantRow,
+): OwnerReviewSummary {
+  const record = toApiRecord(payload);
+  const data = toApiRecord(record.data ?? payload);
+  const rawReviews = data.reviews ?? data.Reviews;
+  const reviews = Array.isArray(rawReviews) ? rawReviews.filter(isApiRecord) : [];
+  const averageRating = getApiNumber(
+    getApiValue(data, "averageRating", "AverageRating"),
+  );
+  const totalReviews = getApiNumber(
+    getApiValue(data, "totalReviews", "TotalReviews"),
+    reviews.length,
+  );
+  const latestComment = reviews.find((item) =>
+    Boolean(getApiValue(item, "comment", "Comment")),
+  );
+
+  return {
+    restaurantId: getApiNumber(
+      getApiValue(data, "restaurantId", "RestaurantId"),
+      restaurant.id ?? 0,
+    ),
+    restaurantName: getApiString(
+      getApiValue(data, "restaurantName", "RestaurantName"),
+      restaurant.name,
+    ),
+    averageRating,
+    totalReviews,
+    latestComment: latestComment
+      ? getApiString(getApiValue(latestComment, "comment", "Comment"))
+      : undefined,
+  };
+}
+
+function formatDashboardDate(value: string) {
+  if (!value) return "Fecha pendiente";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Fecha pendiente";
+  return date.toLocaleDateString("es-DO", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 function RestaurantFormCard({
   restaurant,
   onRestaurantChange,
