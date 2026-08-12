@@ -122,5 +122,107 @@ namespace WebApi.Controllers
                     $"An error occurred while retrieving reservations: {ex.Message}");
             }
         }
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("history")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Obtener historial de reservas",
+            Description = "Devuelve reservas confirmadas, canceladas y las horas pico. Puede filtrarse por restaurante y rango de fechas"
+        )]
+        public async Task<ActionResult<ReservationHistoryDto>> GetReservationHistory(
+            [FromQuery] int? restaurantId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int topPeakHours = 5)
+        {
+            try
+            {
+                var history = await reservationService.GetHistoryAsync(restaurantId, from, to, topPeakHours);
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"An error occurred while retrieving reservation history: {ex.Message}");
+            }
+        }
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("history/confirmed")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Obtener historial de reservas confirmadas",
+            Description = "Devuelve las reservas confirmadas. Puede filtrarse por restaurante y rango de fechas"
+        )]
+        public async Task<ActionResult<List<ReservationDto>>> GetConfirmedHistory(
+            [FromQuery] int? restaurantId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            try
+            {
+                var reservations = await reservationService.GetConfirmedHistoryAsync(restaurantId, from, to);
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"An error occurred while retrieving confirmed reservation history: {ex.Message}");
+            }
+        }
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("history/cancelled")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Obtener historial de reservas canceladas",
+            Description = "Devuelve las reservas canceladas. Puede filtrarse por restaurante y rango de fechas"
+        )]
+        public async Task<ActionResult<List<ReservationDto>>> GetCancelledHistory(
+            [FromQuery] int? restaurantId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            try
+            {
+                var reservations = await reservationService.GetCancelledHistoryAsync(restaurantId, from, to);
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"An error occurred while retrieving cancelled reservation history: {ex.Message}");
+            }
+        }
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("history/peak-hours")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Obtener horas pico de reservas",
+            Description = "Devuelve las horas con mayor cantidad de reservas. Puede filtrarse por restaurante y rango de fechas"
+        )]
+        public async Task<ActionResult<List<PeakHourDto>>> GetPeakHours(
+            [FromQuery] int? restaurantId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int top = 5)
+        {
+            try
+            {
+                var peakHours = await reservationService.GetPeakHoursAsync(restaurantId, from, to, top);
+                return Ok(peakHours);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"An error occurred while retrieving reservation peak hours: {ex.Message}");
+            }
+        }
     }
 }

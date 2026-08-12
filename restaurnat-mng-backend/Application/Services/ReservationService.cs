@@ -99,6 +99,82 @@ namespace Application.Services
             return reservations.Select(MapToDto).ToList();
         }
 
+        public async Task<List<ReservationDto>> GetConfirmedHistoryAsync(int? restaurantId, DateTime? from, DateTime? to)
+        {
+            var reservations = await reservationRepository.GetHistoryAsync(
+                [ReservationStatus.Confirmed],
+                restaurantId,
+                NormalizeUtc(from),
+                NormalizeUtc(to));
+
+            return reservations.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ReservationDto>> GetCancelledHistoryAsync(int? restaurantId, DateTime? from, DateTime? to)
+        {
+            var reservations = await reservationRepository.GetHistoryAsync(
+                [ReservationStatus.Cancelled],
+                restaurantId,
+                NormalizeUtc(from),
+                NormalizeUtc(to));
+
+            return reservations.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<PeakHourDto>> GetPeakHoursAsync(int? restaurantId, DateTime? from, DateTime? to, int top = 5)
+        {
+            var limit = Math.Clamp(top, 1, 24);
+            var reservations = await reservationRepository.GetHistoryAsync(
+                [ReservationStatus.Pending, ReservationStatus.Confirmed, ReservationStatus.Attended],
+                restaurantId,
+                NormalizeUtc(from),
+                NormalizeUtc(to));
+
+            return reservations
+                .GroupBy(r => r.DateTimeReservation.Hour)
+                .Select(group => new PeakHourDto
+                {
+                    Hour = group.Key,
+                    TimeRange = $"{group.Key:00}:00 - {(group.Key + 1) % 24:00}:00",
+                    ReservationsCount = group.Count(),
+                    PeopleCount = group.Sum(r => r.PeopleCount)
+                })
+                .OrderByDescending(item => item.ReservationsCount)
+                .ThenByDescending(item => item.PeopleCount)
+                .ThenBy(item => item.Hour)
+                .Take(limit)
+                .ToList();
+        }
+
+        public async Task<ReservationHistoryDto> GetHistoryAsync(int? restaurantId, DateTime? from, DateTime? to, int topPeakHours = 5)
+        {
+            var confirmed = await GetConfirmedHistoryAsync(restaurantId, from, to);
+            var cancelled = await GetCancelledHistoryAsync(restaurantId, from, to);
+            var peakHours = await GetPeakHoursAsync(restaurantId, from, to, topPeakHours);
+
+            return new ReservationHistoryDto
+            {
+                ConfirmedReservations = confirmed,
+                CancelledReservations = cancelled,
+                PeakHours = peakHours,
+                TotalConfirmed = confirmed.Count,
+                TotalCancelled = cancelled.Count
+            };
+        }
+
+        private static DateTime? NormalizeUtc(DateTime? value)
+        {
+            if (!value.HasValue)
+                return null;
+
+            return value.Value.Kind switch
+            {
+                DateTimeKind.Local => value.Value.ToUniversalTime(),
+                DateTimeKind.Utc => value.Value,
+                _ => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
+            };
+        }
+
 
         private static ReservationDto MapToDto(Reservation r) => new()
         {

@@ -55,6 +55,33 @@ namespace Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Reservation>> GetHistoryAsync(
+            IReadOnlyCollection<ReservationStatus> statuses,
+            int? restaurantId,
+            DateTime? from,
+            DateTime? to)
+        {
+            var query = context.Reservations
+                .Include(r => r.Table)
+                .AsQueryable();
+
+            if (statuses.Any())
+                query = query.Where(r => statuses.Contains(r.Status));
+
+            if (restaurantId.HasValue)
+                query = query.Where(r => r.Table != null && r.Table.RestaurantId == restaurantId.Value);
+
+            if (from.HasValue)
+                query = query.Where(r => r.DateTimeReservation >= from.Value);
+
+            if (to.HasValue)
+                query = query.Where(r => r.DateTimeReservation <= to.Value);
+
+            return await query
+                .OrderByDescending(r => r.DateTimeReservation)
+                .ToListAsync();
+        }
+
         public async Task<Reservation?> UpdateStatusAsync(int id, ReservationStatus status)
         {
             var existing = await context.Reservations.FindAsync(id);

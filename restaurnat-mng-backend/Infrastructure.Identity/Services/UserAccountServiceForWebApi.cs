@@ -35,21 +35,14 @@ namespace Infrastructure.Identity.Services
 
             if (!user.EmailConfirmed)
             {
-
-                throw new InvalidOperationException("ACCOUNT_NOT_CONFIRMED");
+                return null;
             }
-
 
             var result = await signInManager.PasswordSignInAsync(user.UserName ?? "", loginDto.Password, false, true);
 
             if (!result.Succeeded)
             {
-                if (result.IsLockedOut)
-                {
-                    throw new InvalidOperationException("ACCOUNT_LOCKED");
-                }
-
-                return null; 
+                return null;
             }
 
         

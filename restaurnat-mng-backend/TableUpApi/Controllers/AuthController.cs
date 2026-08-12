@@ -49,7 +49,6 @@ namespace TableUpApi.Controllers
 
             try
             {
-                // Se mapea al DTO que espera tu servicio existente
                 var loginDto = new LoginDto
                 {
                     Email = dto.Email,
@@ -58,16 +57,23 @@ namespace TableUpApi.Controllers
 
                 var result = await userAccountService.AuthenticateAsync(loginDto);
 
-                // Si las credenciales fallan o el servicio devuelve que tiene error
                 if (result == null || result.HasError)
                 {
+                    var accountExists = !string.IsNullOrWhiteSpace(dto.Email) &&
+                        await userAccountService.GetUserByEmail(dto.Email) is not null;
+
+                    var reasonCode = accountExists ? "UNAUTHORIZED" : "INVALID_CREDENTIALS";
+                    var message = accountExists
+                        ? "La cuenta no está confirmada o las credenciales son inválidas."
+                        : "Credenciales invalidas.";
+
                     return StatusCode(StatusCodes.Status401Unauthorized, new
                     {
                         success = false,
                         error = new
                         {
-                            code = "INVALID_CREDENTIALS",
-                            message = "Credenciales invalidas.",
+                            code = reasonCode,
+                            message,
                             traceId = traceId
                         }
                     });
@@ -97,6 +103,24 @@ namespace TableUpApi.Controllers
                             email = result.User.Email,
                             role = displayRole
                         }
+                    }
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new
+                {
+                    success = false,
+                    error = new
+                    {
+                        code = ex.Message,
+                        message = ex.Message switch
+                        {
+                            "ACCOUNT_NOT_CONFIRMED" => "La cuenta aún no ha sido confirmada.",
+                            "ACCOUNT_LOCKED" => "La cuenta está bloqueada temporalmente.",
+                            _ => "Credenciales invalidas."
+                        },
+                        traceId = traceId
                     }
                 });
             }
