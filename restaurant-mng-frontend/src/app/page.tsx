@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/authStore";
@@ -34,10 +34,9 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedIds, setSavedIds] = useState<number[]>([]);
   const [reservedIds, setReservedIds] = useState<number[]>([]);
   const [pendingIds, setPendingIds] = useState<number[]>([]);
-  const initializedSavedRef = useRef(false);
+  
   const [nameFilter, setNameFilter] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
@@ -175,24 +174,12 @@ export default function Home() {
         setReservedIds([]);
       }
     }
-
-    const savedStored = window.localStorage.getItem("savedRestaurantIds");
-    if (savedStored) {
-      try {
-        setSavedIds(JSON.parse(savedStored));
-      } catch {
-        setSavedIds([]);
-      }
-    }
-
-    initializedSavedRef.current = true;
   }, []);
 
   useEffect(() => {
-    if (!initializedSavedRef.current || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
-    window.localStorage.setItem("savedRestaurantIds", JSON.stringify(savedIds));
-  }, [reservedIds, savedIds]);
+  }, [reservedIds]);
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
@@ -246,14 +233,7 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
-    window.localStorage.setItem("savedRestaurantIds", JSON.stringify(savedIds));
-  }, [reservedIds, savedIds]);
-
-  function toggleSave(id: number) {
-    setSavedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    );
-  }
+  }, [reservedIds]);
 
   function handleReserveClick(id: number) {
     router.push(`/restaurant/${id}/reserve`);
@@ -308,7 +288,7 @@ export default function Home() {
               Explora restaurantes de calidad y reserva tu mesa con estilo
             </h1>
             <p className="mx-auto max-w-2xl text-base text-stone-200 sm:text-lg">
-              Mira restaurantes verificados, guarda tus favoritos y reserva directamente desde la comodidad de la página.
+              Mira restaurantes verificados y reserva directamente desde la comodidad de la página.
             </p>
           </div>
           <form onSubmit={handleSearchSubmit} className="mx-auto w-full max-w-[960px] grid gap-4 sm:grid-cols-[2.5fr_1fr_1fr_auto_auto]">
@@ -406,19 +386,12 @@ export default function Home() {
                     </div>
                     <p className="text-sm leading-6 text-stone-200">{restaurant.address}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 justify-items-center">
-                    <button
-                      onClick={() => toggleSave(restaurant.id)}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold text-amber-100 transition hover:bg-[#3f291d] ${savedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : ""}`}
-                    >
-                      <img src={savedIds.includes(restaurant.id) ? "/icon-guardado.png" : "/icon-guardar.png"} alt={savedIds.includes(restaurant.id) ? "Guardado" : "Guardar"} className="h-7 w-7" />
-                      <span>{savedIds.includes(restaurant.id) ? "Guardado" : "Guardar"}</span>
-                    </button>
+                  <div className="flex justify-center">
                     <button
                       onClick={() => handleReserveClick(restaurant.id)}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold transition ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100 hover:bg-[#3f291d]" : pendingIds.includes(restaurant.id) ? "bg-cyan-500/20 text-cyan-100 hover:bg-cyan-400/30" : "text-amber-100 hover:bg-[#3f291d]"}`}
+                      className={`flex items-center justify-center gap-3 rounded-3xl bg-[#2f1f12]/95 px-6 py-3 text-sm font-semibold transition ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : pendingIds.includes(restaurant.id) ? "bg-cyan-500/20 text-cyan-100" : "text-amber-100 hover:bg-[#3f291d]"}`}
                     >
-                      <img src="/icon-reservar.png" alt="Reservar" className="h-7 w-7" />
+                      <img src="/icon-reservar.png" alt="Reservar" className="h-6 w-6" />
                       <span>{reservedIds.includes(restaurant.id) ? "Reservado" : pendingIds.includes(restaurant.id) ? "Reservando..." : "Reservar"}</span>
                     </button>
                   </div>
@@ -442,7 +415,7 @@ export default function Home() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl bg-[#3f291d]/90 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-amber-300">Fácil</p>
-                <p className="mt-3 text-sm text-stone-200">Busca, guarda y reserva en pocos clics.</p>
+                <p className="mt-3 text-sm text-stone-200">Busca y reserva en pocos clics.</p>
               </div>
               <div className="rounded-3xl bg-[#3f291d]/90 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-amber-300">Confiable</p>
