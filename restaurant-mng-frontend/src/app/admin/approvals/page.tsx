@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "../../../store/authStore";
 import { redirect } from "next/navigation";
 import UnauthorizedPage from "@/app/unauthorized/page";
+import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -221,10 +222,7 @@ export default function AdminApprovalsPage() {
         </nav>
 
         <div className="relative z-10 flex items-center gap-3">
-          <button className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-stone-100 transition hover:border-white/40 hover:bg-white/15">
-            Admin Panel
-          </button>
-          <Image src="/tableup-logo.png" alt="Profile" width={40} height={40} className="rounded-full border border-white/20 bg-white/10" />
+          <ProfileAvatarButton />
         </div>
       </header>
 

@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import Link from "next/link";
+import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -207,13 +208,7 @@ export default function WorkDaySalesHistoryPage() {
           </Link>
         </nav>
         <div className="relative z-10 flex items-center gap-3">
-          <Image
-            src="/tableup-logo.png"
-            alt="Profile"
-            width={40}
-            height={40}
-            className="rounded-full border border-white/20 bg-white/10"
-          />
+          <ProfileAvatarButton />
         </div>
       </header>
 
