@@ -335,6 +335,8 @@ export default function OwnerProfilePage() {
             apiMessage=""
           />
 
+          <AlertCards restaurants={restaurantRows} />
+
           {/*<OwnerManagementPanel
             message={ownerMessage}
             restaurants={restaurantRows}
@@ -687,3 +689,92 @@ function ApprovalStep({
     </div>
   );
 }
+
+function AlertCards({ restaurants }: { restaurants: RestaurantRow[] }) {
+  const total = restaurants.length;
+  const pending = restaurants.filter((r) => r.status === "Pendiente").length;
+  const approved = restaurants.filter((r) => r.status === "Aprobado").length;
+  const rejected = restaurants.filter((r) => r.status !== "Aprobado" && r.status !== "Pendiente").length;
+
+  const cards = [
+    {
+      label: "Total de restaurantes",
+      value: total,
+      icon: "🏪",
+      tone: "border-amber-700/50 bg-amber-950/20",
+      textTone: "text-amber-400",
+      risk: null,
+    },
+    {
+      label: "Aprobados",
+      value: approved,
+      icon: "✅",
+      tone: "border-emerald-700/50 bg-emerald-950/20",
+      textTone: "text-emerald-400",
+      risk: null,
+    },
+    {
+      label: "Pendientes de aprobación",
+      value: pending,
+      icon: "⏳",
+      tone: pending > 0 ? "border-sky-700/50 bg-sky-950/20" : "border-[#2d180d] bg-[#120904]",
+      textTone: "text-sky-400",
+      risk: pending > 0 ? "En revisión por el administrador" : null,
+    },
+    {
+      label: "Rechazados",
+      value: rejected,
+      icon: "❌",
+      tone: rejected > 0 ? "border-red-700/50 bg-red-950/20" : "border-[#2d180d] bg-[#120904]",
+      textTone: "text-red-400",
+      risk: rejected > 0 ? "⚠️ Revisa los datos e intenta nuevamente" : null,
+    },
+  ];
+
+  return (
+    <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
+      <div className="mb-4 border-b border-[#2d180d]/70 pb-3">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-500">
+          Panel de alertas
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-white">
+          Indicadores y estado de tus restaurantes
+        </h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((card) => (
+          <div
+            key={card.label}
+            className={`rounded-xl border p-4 ${card.tone}`}
+          >
+            <div className="mb-2 text-2xl">{card.icon}</div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              {card.label}
+            </p>
+            <p className={`mt-1 text-3xl font-bold ${card.textTone}`}>
+              {card.value}
+            </p>
+            {card.risk && (
+              <p className="mt-2 text-[11px] leading-4 text-stone-400">
+                {card.risk}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {pending > 0 && (
+        <div className="mt-4 rounded-lg border border-sky-800/50 bg-sky-950/20 px-4 py-3 text-xs text-sky-300">
+          ℹ️ Tienes <strong>{pending}</strong> restaurante{pending > 1 ? "s" : ""} pendiente{pending > 1 ? "s" : ""} de aprobación. El administrador los revisará pronto.
+        </div>
+      )}
+      {rejected > 0 && (
+        <div className="mt-2 rounded-lg border border-red-800/50 bg-red-950/20 px-4 py-3 text-xs text-red-300">
+          ⚠️ Tienes <strong>{rejected}</strong> restaurante{rejected > 1 ? "s" : ""} rechazado{rejected > 1 ? "s" : ""}. Ve a <strong>Mis Restaurantes</strong> para revisar y corregir la información.
+        </div>
+      )}
+    </section>
+  );
+}
+
