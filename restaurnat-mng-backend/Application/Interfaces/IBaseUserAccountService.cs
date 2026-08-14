@@ -17,7 +17,7 @@ namespace Application.Interfaces
 
         //Task<UserResponseDto> DeleteAsync(string id);
         //Task<EditResponseDto> EditUser(SaveUserDto saveDto, string? origin, bool? isCreated = false);
-        Task<RegisterResponseDto> RegisterUser(SaveUserDto saveDto, string? origin, bool? isApi = false);
+        Task<RegisterResponseDto> RegisterUser(SaveUserDto saveDto, bool? isApi = false);
 
         Task<UserProfileResponseDto?> GetUserProfileByIdAsync(string userId);
 

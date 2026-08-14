@@ -21,7 +21,7 @@ namespace Infrastructure.Identity.Services
         }
 
 
-        public virtual async Task<RegisterResponseDto> RegisterUser(SaveUserDto dto, string? origin, bool? isApi = false)
+        public virtual async Task<RegisterResponseDto> RegisterUser(SaveUserDto dto, bool? isApi = false)
         {
      
             string identityRole = dto.Role switch
@@ -67,9 +67,38 @@ namespace Infrastructure.Identity.Services
             
             if (dto.Role == "Cliente")
             {
-                var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                var token = await GetVerificationEmailToken(user);
                 var subject = "Tu código de activación - TableUp";
-                var body = $@"<h3>Bienvenido a TableUp</h3><p>Hola {user.Name},</p><p>Para activar tu cuenta en la aplicación de restaurantes, utiliza el siguiente código de confirmación:</p><h2 style='color: #2c3e50;'>{token}</h2>";
+                var body = $@"
+                        <div style='font-family: Arial, sans-serif; max-width: 500px; margin: auto; color: #333;'>
+                            <h2 style='color: #2c3e50;'>Bienvenido a TableUp</h2>
+
+                            <p>Hola <strong>{user.Name}</strong>,</p>
+
+                            <p>
+                                Para activar tu cuenta en TableUp, utiliza el siguiente código de confirmación:
+                            </p>
+
+                            <div style='
+                                background-color: #f5f5f5;
+                                padding: 12px;
+                                margin: 16px 0;
+                                text-align: center;
+                                border-radius: 6px;
+                                word-break: break-all;
+                            '>
+                                <strong style='font-size: 15px; color: #2c3e50;'>{token}</strong>
+                            </div>
+
+                            <p style='color: #666; font-size: 14px;'>
+                                Ingresa este código en la aplicación para activar tu cuenta.
+                            </p>
+
+                            <p>
+                                Saludos,<br>
+                                <strong>Equipo TableUp</strong>
+                            </p>
+                        </div>";
 
                 await emailService.SendAsync(new EmailRequestDto
                 {
@@ -535,24 +564,6 @@ namespace Infrastructure.Identity.Services
 
         #region protected methods
 
-        protected async Task<string> GetVerificationEmailUri(UserAccount user, string origin)
-        {
-            if (string.IsNullOrWhiteSpace(origin) || !Uri.IsWellFormedUriString(origin, UriKind.Absolute))
-            {
-                throw new InvalidOperationException("El parámetro 'origin' no es una URI válida.");
-            }
-
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-            var baseUri = new Uri(origin.TrimEnd('/'));
-            var completeUrl = new Uri(baseUri, "Login/ConfirmEmail");
-
-            var verificationUri = QueryHelpers.AddQueryString(completeUrl.ToString(), "userId", user.Id);
-            verificationUri = QueryHelpers.AddQueryString(verificationUri, "token", token);
-
-            return verificationUri;
-        }
         protected async Task<string?> GetVerificationEmailToken(UserAccount user)
         {
             var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -571,14 +582,6 @@ namespace Infrastructure.Identity.Services
             resetUri = QueryHelpers.AddQueryString(resetUri.ToString(), "token", token);
 
             return resetUri;
-        }
-
-        protected async Task<string?> GetResetPasswordToken(UserAccount user)
-        {
-            var token = await userManager.GeneratePasswordResetTokenAsync(user);
-            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-            return token;
         }
 
         #endregion
