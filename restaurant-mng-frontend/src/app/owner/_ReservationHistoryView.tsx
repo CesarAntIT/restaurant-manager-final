@@ -297,6 +297,12 @@ export default function ReservationHistoryView({
           >
             Reservas
           </Link>
+          <Link
+            href="/owner/ingredients"
+            className="rounded-full  px-4 py-2 transition hover:bg-white/10"
+          >
+            Ingredientes
+          </Link>
         </nav>
 
         <div className="relative z-10 flex items-center gap-3">
@@ -305,7 +311,7 @@ export default function ReservationHistoryView({
       </header>
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-8">
-        <div className="rounded-[2rem] border border-white/10 bg-[#0f0906]/85 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8">
+        <div className="rounded-4xl border border-white/10 bg-[#0f0906]/85 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8">
           <div className="flex flex-col gap-4 border-b border-white/10 pb-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <Link
