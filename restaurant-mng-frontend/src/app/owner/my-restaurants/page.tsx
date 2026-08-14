@@ -166,6 +166,12 @@ export default function MyRestaurants() {
             My Restaurants
           </Link>
           <Link
+            href="/owner/reservations"
+            className="rounded-full bg-amber-500/20 px-4 py-2 text-amber-200 transition hover:bg-amber-500/30"
+          >
+            Reservas
+          </Link>
+          <Link
             href="/owner/ingredients"
             className="rounded-full bg-amber-500/20 px-4 py-2 text-amber-200 transition hover:bg-amber-500/30"
           >
@@ -340,6 +346,9 @@ export default function MyRestaurants() {
           </Link>
           <Link href={`/owner/restaurants/${r.id}/tables`} className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20 text-center block">
             Mesas
+          </Link>
+          <Link href={`/owner/restaurants/${r.id}/reservations`} className="mb-2 bg-amber-500/50 p-1.5 rounded-xl hover:bg-amber-500 hover:font-bold w-20 text-center block">
+            Reservas
           </Link>
           <button
             className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20"
