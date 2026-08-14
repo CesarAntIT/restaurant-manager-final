@@ -502,6 +502,13 @@ export default function OwnerProfilePage() {
                       >
                         Ingredientes
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/owner/reservations")}
+                        className="rounded-lg border border-amber-500/50 px-4 py-2 text-xl font-extrabold italic uppercase text-amber-300 transition hover:border-amber-400 hover:text-amber-200"
+                      >
+                        Reservas
+                      </button>
                     </div>
                   </div>
           </section>
