@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ProfileAvatarButton from "@/components/ProfileAvatarButton";
+import { create } from "zustand";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
 type Dish = {
@@ -34,6 +35,9 @@ export default function MenuPage() {
 
   const [currentDishes, setCurrentDishes] = useState<Dish[]>([]);
   const [allDishes, setAllDishes] = useState<Dish[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [toEdit, setToEdit] = useState(false);
+  const [toRemove, setToRemove] = useState(false);
 
   async function checkRestaurant() {
     try {
@@ -161,6 +165,80 @@ export default function MenuPage() {
       console.error(e);
     }
   }
+  async function createMenu(menuData: {
+    restaurantId: number;
+    name: string;
+    description: string;
+  }) {
+    try {
+      const res = await fetch(`${API_URL}/api/menus`, {
+        method: "POST",
+        headers: {
+          Accept: "*/*",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(menuData),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error al crear el menú: ${res.status}`);
+      }
+
+      const data = await res.json();
+      getMenuList();     
+      setShowForm(false);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async function deleteMenu(menuId: number) {
+    try {
+      const res = await fetch(`${API_URL}/api/menus/${menuId}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "*/*",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error al eliminar el menú: ${res.status}`);
+      }
+
+      getMenuList();
+      setShowForm(false);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async function updateMenu(
+    menuId: number,
+    menuData: { name: string; description: string; status: string },
+  ) {
+    try {
+      const res = await fetch(`${API_URL}/api/menus/${menuId}`, {
+        method: "PUT",
+        headers: {
+          Accept: "*/*",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(menuData),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error al actualizar el menú: ${res.status}`);
+      }
+
+      const data = await res.json();
+      getMenuList();
+      setShowForm(false);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   async function handleChangeMenu(id: number) {
     setCurrentMenu(menuList.filter((m) => m.id === id)[0]);
   }
@@ -270,12 +348,24 @@ export default function MenuPage() {
               <h1 className="text-3xl font-semibold text-white sm:text-4xl">
                 Menus
               </h1>
-              <button className="bg-green-800 p-2 rounded-2xl font-bold mr-3 hover:bg-green-950">
+              <button
+                className="bg-green-800 p-2 rounded-2xl font-bold mr-3 hover:bg-green-950"
+                onClick={() => {
+                  setShowForm(true);
+                  setToEdit(false);
+                }}
+              >
                 Add New Menu &#10798;
               </button>
             </div>
 
             <MenuSelect />
+            <p
+              className={`px-5 py-1 m-1 rounded font-bold ${currentMenu?.status == "Active" ? "bg-green-400/50 text-green-200" : "bg-red-400/50 text-red-200"}`}
+            >
+              {currentMenu?.status == "Active" ? "Active" : "Inactive"}
+            </p>
+            {showForm ? <MenuForm toEdit={toEdit} /> : ""}
 
             <hr className="mb-5"></hr>
             <div className="flex flex-wrap gap-3 justify-evenly">
@@ -288,6 +378,126 @@ export default function MenuPage() {
     </div>
   );
 
+
+  function RemoveMenuCard() {
+    return (
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full z-40 rounded-4xl border border-white/10 bg-[#0f0906]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8 mb-5">
+        <h1>Eliminar el Restaurante?</h1>
+        <br />
+        <p>
+          Desea eliminar el Menú{" "}
+          <b>
+            <i>{toRemove ? currentMenu!.name : ""}</i>
+          </b>
+          <br />
+          El cual tiene{" "}
+          <b>{toRemove ? currentDishes.length : ""} </b>
+          Platillos?
+        </p>
+
+        <button
+          onClick={
+            toRemove != null ? () => deleteMenu(currentMenu!.id) : () => null
+          }
+          className="mr-5 bg-red-500 text-white w-30 h-10 rounded-xl hover:bg-red-500/50 hover:font-bold active:bg-red-400"
+        >
+          Eliminar
+        </button>
+        <button onClick={() => setToRemove(false)}>Cancelar</button>
+      </div>
+    );
+  }
+  function MenuForm({ toEdit }: { toEdit: boolean }) {
+    const [name, setName] = useState(
+      toEdit && currentMenu != undefined ? currentMenu.name : "",
+    );
+    const [desc, setDesc] = useState(
+      toEdit && currentMenu != undefined ? currentMenu.description : "",
+    );
+    const [status, setStatus] = useState(
+      toEdit && currentMenu != undefined ? currentMenu.status : "",
+    );
+
+    return (
+      <div className="w-full border rounded-xl border-white/10 bg-[#0f0906]/95 p-6 shadow-2xl shadow-black/60 backdrop-blur-3xl sm:p-8 mb-5 left-0">
+        <h1 className="font-bold text-xl">
+          {toEdit ? "Edit Menu" : "Add a new Menu"}
+        </h1>
+        <br />
+        <div>
+          <p className="ps-1 italic">Title</p>
+          <input
+            className="w-125 rounded-md border border-[#2d180d]/70 py-1 mb-3 px-2"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div>
+          <p className="ps-1 italic">Description</p>
+          <textarea
+            className="w-125 rounded-md border border-[#2d180d]/70 py-1 mb-3 px-2"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+          />
+        </div>
+        {toEdit && (
+          <div>
+            <p className="ps-1 italic">Status</p>
+            <select
+              onChange={(e) => setStatus(e.target.value)}
+              value={status}
+              className="font-bold italic bg-[#0f0906]/80 border-white/10"
+            >
+              <option value={"Active"}>Active</option>
+              <option value={"Inactive"}>Inactive</option>
+            </select>
+          </div>
+        )}
+
+        { toRemove ? <RemoveMenuCard/> : ""}
+        
+        <div className="flex justify-between">
+          <div className=" flex gap-3">
+            {toEdit ? (
+              <button
+                onClick={() =>
+                  updateMenu(currentMenu!.id, {
+                    description: desc,
+                    name: name,
+                    status: status,
+                  })
+                }
+                className="bg-amber-700 px-5 py-1 rounded-xl hover:bg-amber-700/75"
+              >
+                Edit
+              </button>
+            ) : (
+                <button className="bg-green-700 px-5 py-1 rounded-xl hover:bg-amber-700/75"
+                  onClick={() => createMenu({description:desc, name: name, restaurantId: Number(restaurantId)})}>
+                Add
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowForm(false)}
+              className="bg-gray-700 px-5 py-1 rounded-xl hover:bg-gray-700/75"
+            >
+              Cancel
+            </button>
+          </div>
+          {toEdit ? (
+            <button
+              onClick={() => setToRemove(true)}
+              className="bg-red-700 px-5 py-1 rounded-xl hover:bg-red-700/75 font-bold">
+              DELETE
+            </button>
+          ) : (
+            ""
+          )}
+        </div>
+      </div>
+    );
+  }
   function MenuSelect() {
     return (
       <div className="flex mb-2 gap-2">
@@ -306,10 +516,21 @@ export default function MenuPage() {
             ))
           )}
         </select>
-        <button className="bg-amber-500 p-1 rounded-xl font-bold mr-3 hover:bg-amber-800">
-          {" "}
-          Menu
-        </button>
+        {menuList.length >= 1 ? (
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setToEdit(true);
+            }}
+
+            className="bg-amber-500 p-1 rounded-xl font-bold mr-3 hover:bg-amber-800"
+          >
+            {" "}
+            Manage Menu
+          </button>
+        ) : (
+          ""
+        )}
       </div>
     );
   }
@@ -322,7 +543,7 @@ export default function MenuPage() {
         ),
       [searchVal],
     );
-    
+
     return (
       <div>
         <h2 className="font-bold text-xl italic">Platillos Activos</h2>
