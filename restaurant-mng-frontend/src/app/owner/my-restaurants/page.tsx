@@ -154,12 +154,6 @@ export default function MyRestaurants() {
             Home
           </Link>
           <Link
-            href="/"
-            className="rounded-full px-4 py-2 transition hover:bg-white/10"
-          >
-            Restaurants
-          </Link>
-          <Link
             href="/owner/my-restaurants"
             className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2"
           >
@@ -167,21 +161,15 @@ export default function MyRestaurants() {
           </Link>
           <Link
             href="/owner/reservations"
-            className="rounded-full bg-amber-500/20 px-4 py-2 text-amber-200 transition hover:bg-amber-500/30"
+            className="rounded-full  px-4 py-2 transition hover:bg-white/10"
           >
             Reservas
           </Link>
           <Link
             href="/owner/ingredients"
-            className="rounded-full bg-amber-500/20 px-4 py-2 text-amber-200 transition hover:bg-amber-500/30"
+            className="rounded-full  px-4 py-2 transition hover:bg-white/10"
           >
             Ingredientes
-          </Link>
-          <Link
-            href="/about"
-            className="rounded-full px-4 py-2 transition hover:bg-white/10"
-          >
-            About Us
           </Link>
         </nav>
 

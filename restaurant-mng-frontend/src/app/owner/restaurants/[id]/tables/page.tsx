@@ -188,7 +188,7 @@ export default function TablesPage() {
         <nav className="relative z-10 flex items-center gap-3 text-sm text-stone-200">
           <Link href="/" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</Link>
           <Link href="/owner/my-restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">My Restaurants</Link>
-          <Link href="/owner/restaurants" className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2">Tables</Link>
+          <Link href="/owner/my-restaurants" className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2">Tables</Link>
         </nav>
         <div className="relative z-10 flex items-center gap-3">
           <ProfileAvatarButton />
