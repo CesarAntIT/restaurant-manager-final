@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
-import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5155";
 const FALLBACK_BACKGROUND = "https://images.unsplash.com/photo-1541544181069-3ede9f8b9500?auto=format&fit=crop&w=1600&q=80";
@@ -187,11 +186,15 @@ export default function TablesPage() {
         </div>
         <nav className="relative z-10 flex items-center gap-3 text-sm text-stone-200">
           <Link href="/" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</Link>
-          <Link href="/owner/my-restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">My Restaurants</Link>
-          <Link href="/owner/restaurants" className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2">Tables</Link>
+          <Link href="/owner/my-restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">Mis Restaurantes</Link>
+          <Link href={`/owner/restaurants/${restaurantId}/tables`} className="rounded-full bg-emerald-500/20 text-emerald-200 transition hover:bg-emerald-500/30 px-4 py-2">Mesas</Link>
+          <Link href={`/owner/restaurants/${restaurantId}/dishes`} className="rounded-full px-4 py-2 transition hover:bg-white/10">Platos</Link>
+          <Link href={`/owner/restaurants/${restaurantId}/dashboard`} className="rounded-full px-4 py-2 transition hover:bg-white/10">Ventas</Link>
+          <Link href={`/owner/restaurants/${restaurantId}/predictions`} className="rounded-full px-4 py-2 transition hover:bg-white/10">Predicción</Link>
+          <Link href={`/owner/restaurants/${restaurantId}/insights`} className="rounded-full px-4 py-2 transition hover:bg-white/10">Insights IA</Link>
         </nav>
         <div className="relative z-10 flex items-center gap-3">
-          <ProfileAvatarButton />
+          <Image src="/tableup-logo.png" alt="Profile" width={40} height={40} className="rounded-full border border-white/20 bg-white/10" />
         </div>
       </header>
 

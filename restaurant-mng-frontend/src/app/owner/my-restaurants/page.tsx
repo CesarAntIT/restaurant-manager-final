@@ -290,13 +290,12 @@ export default function MyRestaurants() {
               Estado:{" "}
               <span
                 className={`inline-block rounded-full px-2 py-1 text-xs font-semibold
-                ${
-                  r.status === "Approved"
+                ${r.status === "Approved"
                     ? "bg-emerald-500/20"
                     : r.status === "Rejected"
                       ? "bg-rose-500/20 text-rose-300"
                       : "bg-amber-500/20 text-amber-200"
-                } bg-amber-500/20 text-amber-200`}
+                  } bg-amber-500/20 text-amber-200`}
               >
                 {r.status}
               </span>
@@ -341,22 +340,22 @@ export default function MyRestaurants() {
 
         <div className="">
           <div className="flex flex-col gap-2">
-          <Link href={`/owner/restaurants/${r.id}/workdays`} className="mb-2 bg-emerald-500/50 p-1.5 rounded-xl hover:bg-emerald-500 hover:font-bold w-20 text-center block">
-            Jornadas
-          </Link>
-          <Link href={`/owner/restaurants/${r.id}/tables`} className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20 text-center block">
-            Mesas
-          </Link>
-          <Link href={`/owner/restaurants/${r.id}/reservations`} className="mb-2 bg-amber-500/50 p-1.5 rounded-xl hover:bg-amber-500 hover:font-bold w-20 text-center block">
-            Reservas
-          </Link>
-          <button
-            className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20"
-            onClick={() => setToEdit(r)}
-          >
-            Editar
-          </button>
-        </div>
+            <Link href={`/owner/restaurants/${r.id}/workdays`} className="mb-2 bg-emerald-500/50 p-1.5 rounded-xl hover:bg-emerald-500 hover:font-bold w-20 text-center block">
+              Jornadas
+            </Link>
+            <Link href={`/owner/restaurants/${r.id}/tables`} className="mb-2 bg-blue-500/50 p-1.5 rounded-xl hover:bg-blue-500 hover:font-bold w-20 text-center block">
+              Mesas
+            </Link>
+            <Link href={`/owner/restaurants/${r.id}/reservations`} className="mb-2 bg-amber-500/50 p-1.5 rounded-xl hover:bg-amber-500 hover:font-bold w-20 text-center block">
+              Reservas
+            </Link>
+            <button
+              className="mb-2 bg-yellow-600/70 p-1.5 rounded-xl hover:bg-yellow-500 hover:font-bold w-20"
+              onClick={() => setToEdit(r)}
+            >
+              Editar
+            </button>
+          </div>
           <br />
           <button
             className="mt-5 bg-red-500/50 p-1.5 rounded-xl hover:bg-red-500 hover:font-bold w-20"

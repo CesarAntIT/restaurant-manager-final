@@ -23,7 +23,7 @@ namespace Application.Services
 
         public async Task<string> GenerarInsightAsync (string prompt)
         {
-            string model = "gemini-2.0-flash";
+            string model = "gemini-3.6-flash";
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={_apiKey}";
 
             var requestBody = new
@@ -59,7 +59,7 @@ namespace Application.Services
             using var doc = JsonDocument.Parse(jsonResponse);
             var textResult = doc.RootElement
                 .GetProperty("candidates")[0]
-                .GetProperty("contents")
+                .GetProperty("content")
                 .GetProperty("parts")[0]
                 .GetProperty("text")
                 .GetString();
