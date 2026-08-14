@@ -103,12 +103,9 @@ export default function WorkDayPage() {
         status: item.status,
       }));
 
-      const activeMenus = menus.filter((m) => m.status === "Active");
+      setMenuList(menus);
+      setCurrentMenu(menus[0]);  
       
-      setMenuList(activeMenus);
-      if (activeMenus.length >= 1) {
-        setCurrentMenu(Menus[0]);  
-      }
     } catch (e) {
       console.error(e);
     }
