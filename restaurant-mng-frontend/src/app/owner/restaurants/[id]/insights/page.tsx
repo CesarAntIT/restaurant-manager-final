@@ -55,10 +55,10 @@ export default function InsightsPage() {
             setError(null);
             setResponse(null);
 
-            const res = await fetch(`${API_URL}/api/IATest/probando-ia`, {
+            const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}/insights`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify(prompt.trim()),
+                body: JSON.stringify({ prompt: prompt.trim() }),
             });
 
             if (!res.ok) {
