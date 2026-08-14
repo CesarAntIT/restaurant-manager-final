@@ -570,7 +570,7 @@ export default function MenuPage() {
                 key={i}
                 className={`flex justify-between items-center mb-2 mt-2 p-1 rounded-lg`}
               >
-                <div className="w-100">
+                <div className="max-w-100">
                   <h3 className="font-bold text-lg">{r.name}</h3>
                   <p className="text-xs">{r.description}</p>
                 </div>
@@ -629,8 +629,8 @@ export default function MenuPage() {
                 key={i}
                 className={`flex justify-between items-center mb-2 mt-2 p-1 rounded-lg`}
               >
-                <div className="w-100">
-                  <h3 className="font-bold text-lg">{r.name}</h3>
+                <div className="max-w-100">
+                  <h3 className="font-bold wrap-normal text-lg">{r.name}</h3>
                   <p className="text-xs">{r.description}</p>
                 </div>
                 <p className="font-bold text-xl text-white text">${r.price}</p>

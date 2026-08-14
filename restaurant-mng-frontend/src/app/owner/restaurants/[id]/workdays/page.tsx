@@ -17,28 +17,46 @@ type Dish = {
   price: number;
 };
 
+type Menu = {
+  id: number;
+  name: string;
+  description: string;
+  status: string;
+};
+
 export default function WorkDayPage() {
   const params = useParams();
   const restaurantId = params.id as string;
 
   const { user, token, isAuthenticated } = useAuthStore();
-  const isOwner = Boolean(user && user.role == "Dueño" && !user.isAdmin);
+  const [Menus, setMenuList] = useState<Menu[]>([]);
+  const [currentMenu, setCurrentMenu] = useState<Menu>();
   const [Dishes, setDishes] = useState<Dish[]>([]);
+
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [searchVal, setSearchVal] = useState("");
-  const [isOwnerRestaurant, setIsOwnerRestaurant] = useState(false)
-  const [isWorkdayActive, setIsWorkdayActive] = useState<boolean | null>(null)
-  const [isCheckingActive, setIsCheckingActive] = useState(false)
-  const [pendingAction, setPendingAction] = useState<"start" | "end" | null>(null)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [workdayNotification, setWorkdayNotification] = useState<string | null>(null)
-  const [workdayNotificationType, setWorkdayNotificationType] = useState<'success' | 'error' | null>(null)
+
+  const [isOwnerRestaurant, setIsOwnerRestaurant] = useState(false);
+  const [isWorkdayActive, setIsWorkdayActive] = useState<boolean | null>(null);
+  const [isCheckingActive, setIsCheckingActive] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"start" | "end" | null>(
+    null,
+  );
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const [workdayNotification, setWorkdayNotification] = useState<string | null>(
+    null,
+  );
+  const [workdayNotificationType, setWorkdayNotificationType] = useState<
+    "success" | "error" | null
+  >(null);
 
   const filteredDishes = Dishes.filter((d) =>
-      d.name.toLowerCase().includes(searchVal.toLowerCase().trim())
-    );
+    d.name.toLowerCase().includes(searchVal.toLowerCase().trim()),
+  );
 
   //Client Side Functions
   function changeQuantity(e: ChangeEvent<HTMLInputElement>) {
@@ -62,33 +80,69 @@ export default function WorkDayPage() {
   }
 
   //API calling Functions
-  async function getDishes() {
+  async function getMenuList() {
     try {
       const res = await fetch(
-        `${API_URL}/api/restaurants/${restaurantId}/dishes`,
+        `${API_URL}/api/menus/restaurant/${restaurantId}`,
         {
           headers: {
-            Accept: "text/plain",
             Authorization: `Bearer ${token}`,
           },
         },
       );
 
-      if (res.ok != true) {
-        return Error(`${res}`);
+      if (!res.ok) {
+        throw new Error(`${res}`);
       }
 
       const data = await res.json();
-      const dishes: Dish[] = (data as any[]).map((item: any) => ({
+      const menus: Menu[] = data.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        status: item.status,
+      }));
+
+      const activeMenus = menus.filter((m) => m.status === "Active");
+      
+      setMenuList(activeMenus);
+      if (activeMenus.length >= 1) {
+        setCurrentMenu(Menus[0]);  
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async function handleChangeMenu(id: number) {
+    setCurrentMenu(Menus.filter((m) => m.id === id)[0]);
+  }
+  async function getDishesPerMenu() {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/menudishes/menu/${currentMenu?.id}/dishes`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) {
+        throw new Error(`${res}`);
+      }
+
+      const data = await res.json();
+      const dish: Dish[] = data.data.map((item: any) => ({
         id: item.id,
         name: item.name,
         description: item.description,
         price: item.price,
       }));
 
-      setDishes(dishes);
+      setDishes(dish);
     } catch (e) {
-      console.error(e);
+      console.log("Dishes Not Found");
+      setDishes([]);
     }
   }
   async function postSale() {
@@ -135,69 +189,75 @@ export default function WorkDayPage() {
       const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}`);
       if (res.ok != true) {
         const data = await res.json();
-        return Error(data)
+        return Error(data);
       }
       const data = await res.json();
       if (data.data.ownerId == user.id) {
-        setIsOwnerRestaurant(true)
+        setIsOwnerRestaurant(true);
       } else {
-        setIsOwnerRestaurant(false)
+        setIsOwnerRestaurant(false);
       }
-      
     } catch (e) {
-      console.log(e)
+      console.log(e);
     }
   }
-  async function activateWorkDay(bool:boolean) {
+
+  async function activateWorkDay(bool: boolean) {
     try {
-      let res
+      let res;
       if (bool) {
         res = await fetch(`${API_URL}/api/workdays/open/${restaurantId}`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
       } else {
         res = await fetch(`${API_URL}/api/workdays/close/${restaurantId}`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
       }
 
-      const data = await res.json()
+      const data = await res.json();
       if (res.ok != true) {
-        console.error(data)
-        return false
+        console.error(data);
+        return false;
       }
 
-      console.log(data)
+      console.log(data);
       // refresh active state after toggling workday
-      try { await getActiveWorkDay(); } catch (err) { console.error(err) }
-      return true
+      try {
+        await getActiveWorkDay();
+      } catch (err) {
+        console.error(err);
+      }
+      return true;
     } catch (e) {
-      console.error(e)
-      return false
+      console.error(e);
+      return false;
     }
   }
-
   async function getActiveWorkDay() {
     if (!restaurantId) return;
     try {
-      setIsCheckingActive(true)
-      const res = await fetch(`${API_URL}/api/workdays/active/${restaurantId}`, {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
+      setIsCheckingActive(true);
+      const res = await fetch(
+        `${API_URL}/api/workdays/active/${restaurantId}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (!res.ok) {
         // treat non-ok as no active workday, but keep null if token missing
         setIsWorkdayActive(false);
-        setIsCheckingActive(false)
+        setIsCheckingActive(false);
         return;
       }
 
@@ -207,23 +267,36 @@ export default function WorkDayPage() {
         setIsWorkdayActive(Boolean(json.success));
       } else {
         // fallback: if message says no active
-        setIsWorkdayActive(!(json && (json.message || json.Message) && String(json.message).toLowerCase().includes("no hay jornada")));
+        setIsWorkdayActive(
+          !(
+            json &&
+            (json.message || json.Message) &&
+            String(json.message).toLowerCase().includes("no hay jornada")
+          ),
+        );
       }
-      setIsCheckingActive(false)
+      setIsCheckingActive(false);
     } catch (e) {
       console.error(e);
       setIsWorkdayActive(false);
-      setIsCheckingActive(false)
+      setIsCheckingActive(false);
     }
   }
 
   useEffect(() => {
     if (restaurantId && token) {
-      getDishes();
+      getMenuList();
       checkRestaurant();
       getActiveWorkDay();
     }
-  },[restaurantId, token])
+  }, [restaurantId, token]);
+
+  useEffect(() => {
+    if (currentMenu) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      getDishesPerMenu();
+    }
+  }, [currentMenu]);
 
   if (!isAuthenticated) {
     return (
@@ -242,23 +315,22 @@ export default function WorkDayPage() {
   }
   if (!isOwnerRestaurant) {
     {
-        return (
-          <div className="text-center">
-            <div className="p-8 text-center text-stone-100">
-              ACCESSO DENEGADO <br />
-              USTED NO TIENE PERMISOS PARA ENTRAR A ESTA PÁGINA
-            </div>
-            <Link
-              href="/"
-              className="rounded-full px-4 py-2 transition bg-amber-300 font-bold text-black hover:bg-amber-500"
-            >
-              VOLVER A HOME
-            </Link>
+      return (
+        <div className="text-center">
+          <div className="p-8 text-center text-stone-100">
+            ACCESSO DENEGADO <br />
+            USTED NO TIENE PERMISOS PARA ENTRAR A ESTA PÁGINA
           </div>
-        );
-      }
+          <Link
+            href="/"
+            className="rounded-full px-4 py-2 transition bg-amber-300 font-bold text-black hover:bg-amber-500"
+          >
+            VOLVER A HOME
+          </Link>
+        </div>
+      );
+    }
   }
-
 
   return (
     <div>
@@ -322,43 +394,19 @@ export default function WorkDayPage() {
               </Link>
             </div>
 
-            <div className="justify-between mb-2">
-              <button
-                className={`p-2 rounded-2xl font-bold mr-3 ${isWorkdayActive || isCheckingActive || actionLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-500 hover:bg-blue-800"}`}
-                onClick={() => { setPendingAction("start"); setShowConfirmModal(true); }}
-                disabled={Boolean(isWorkdayActive) || isCheckingActive || actionLoading}
-                aria-disabled={Boolean(isWorkdayActive) || isCheckingActive || actionLoading}
-              >
-                {actionLoading && pendingAction === "start" ? (
-                  <span className="inline-flex items-center"><span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2"/>Procesando...</span>
-                ) : (
-                  "Start Work Day"
-                )}
-              </button>
-              <button
-                className={`p-2 rounded-2xl font-bold ${isWorkdayActive && !isCheckingActive && !actionLoading ? "bg-red-500 hover:bg-red-800" : "bg-gray-400 cursor-not-allowed text-white"}`}
-                onClick={() => { setPendingAction("end"); setShowConfirmModal(true); }}
-                disabled={!isWorkdayActive || isCheckingActive || actionLoading}
-                aria-disabled={!isWorkdayActive || isCheckingActive || actionLoading}
-              >
-                {actionLoading && pendingAction === "end" ? (
-                  <span className="inline-flex items-center"><span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2"/>Procesando...</span>
-                ) : (
-                  "End Work Day"
-                )}
-              </button>
-            </div>
+            <WorkdayStartButtons />
+
             {isCheckingActive && (
-              <p className="text-sm text-stone-400">Comprobando estado de jornada...</p>
+              <p className="text-sm text-stone-400">
+                Comprobando estado de jornada...
+              </p>
             )}
 
-            {showConfirmModal && (
-              <ConfirmModal/>
-            )}
+            {showConfirmModal && <ConfirmModal />}
           </div>
           <hr className="mt-5 mb-5 " />
           <div>
-            <h2>Add Work Day Sales</h2>
+            <h2>Add Work Day Sales</h2> <MenuSelect />
             <div>
               <div>
                 <div className="flex items-center">
@@ -399,92 +447,181 @@ export default function WorkDayPage() {
                     </div>
                   ))}
                 </ul>
-              </div>
-              <div className="mt-10">
-                <p className="text-2xl">
-                  Plato Seleccionado: <b>{selectedDish?.name}</b>
-                </p>
-                <br></br>
-                <div className="flex text-xl items-center">
-                  <p>Cantidad de Venta:</p>
-                  <input
-                    className="ml-5 w-18 text-center bg-white text-black font-bold rounded-xl pl-3"
-                    type="number"
-                    value={quantity}
-                    onChange={changeQuantity}
-                  />
-                  <p className="ml-10">
-                    Precio Total: $
-                    <b className="text-3xl">
-                      {selectedDish ? selectedDish.price * quantity : 0}
-                    </b>
-                  </p>
-                </div>
-                {selectedDish != null ? (
-                  <button className="text-2xl mt-3 p-3 bg-green-700 hover:bg-green-950 font-bold rounded-2xl" onClick={handleConfirmSale}>
-                    Confirmar Venta
-                  </button>
-                ) : (
-                  <button
-                    className="text-2xl mt-3 p-3 bg-green-300/30 font-bold rounded-2xl"
-                    disabled
-                  >
-                    Confirmar Venta
-                  </button>
-                )}
+                <CheckoutSection />
               </div>
             </div>
           </div>
         </div>
       </div>
-        <WorkdayToast
-          message={workdayNotification}
-          type={workdayNotificationType}
-          onClose={() => {
-            setWorkdayNotification(null);
-            setWorkdayNotificationType(null);
-          }}
-        />
+      <WorkdayToast
+        message={workdayNotification}
+        type={workdayNotificationType}
+        onClose={() => {
+          setWorkdayNotification(null);
+          setWorkdayNotificationType(null);
+        }}
+      />
     </div>
   );
 
+  function WorkdayStartButtons() {
+    return (
+      <div className="justify-between mb-2">
+        <button
+          className={`p-2 rounded-2xl font-bold mr-3 ${isWorkdayActive || isCheckingActive || actionLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-500 hover:bg-blue-800"}`}
+          onClick={() => {
+            setPendingAction("start");
+            setShowConfirmModal(true);
+          }}
+          disabled={
+            Boolean(isWorkdayActive) || isCheckingActive || actionLoading
+          }
+          aria-disabled={
+            Boolean(isWorkdayActive) || isCheckingActive || actionLoading
+          }
+        >
+          {actionLoading && pendingAction === "start" ? (
+            <span className="inline-flex items-center">
+              <span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2" />
+              Procesando...
+            </span>
+          ) : (
+            "Start Work Day"
+          )}
+        </button>
+        <button
+          className={`p-2 rounded-2xl font-bold ${isWorkdayActive && !isCheckingActive && !actionLoading ? "bg-red-500 hover:bg-red-800" : "bg-gray-400 cursor-not-allowed text-white"}`}
+          onClick={() => {
+            setPendingAction("end");
+            setShowConfirmModal(true);
+          }}
+          disabled={!isWorkdayActive || isCheckingActive || actionLoading}
+          aria-disabled={!isWorkdayActive || isCheckingActive || actionLoading}
+        >
+          {actionLoading && pendingAction === "end" ? (
+            <span className="inline-flex items-center">
+              <span className="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-2" />
+              Procesando...
+            </span>
+          ) : (
+            "End Work Day"
+          )}
+        </button>
+      </div>
+    );
+  }
+  function CheckoutSection() {
+    return (
+      <div className="mt-10">
+        <p className="text-2xl">
+          Plato Seleccionado: <b>{selectedDish?.name}</b>
+        </p>
+        <br></br>
+        <div className="flex text-xl items-center">
+          <p>Cantidad de Venta:</p>
+          <input
+            className="ml-5 w-18 text-center bg-white text-black font-bold rounded-xl pl-3"
+            type="number"
+            value={quantity}
+            onChange={changeQuantity}
+          />
+          <p className="ml-10">
+            Precio Total: $
+            <b className="text-3xl">
+              {selectedDish ? selectedDish.price * quantity : 0}
+            </b>
+          </p>
+        </div>
+        {selectedDish != null ? (
+          <button
+            className="text-2xl mt-3 p-3 bg-green-700 hover:bg-green-950 font-bold rounded-2xl"
+            onClick={handleConfirmSale}
+          >
+            Confirmar Venta
+          </button>
+        ) : (
+          <button
+            className="text-2xl mt-3 p-3 bg-green-300/30 font-bold rounded-2xl"
+            disabled
+          >
+            Confirmar Venta
+          </button>
+        )}
+      </div>
+    );
+  }
+  function MenuSelect() {
+    return (
+      <div className="flex mb-2 gap-2">
+        <select
+          onChange={(e) => handleChangeMenu(Number(e.target.value))}
+          value={currentMenu?.id}
+          className="font-bold text-2xl italic bg-[#0f0906]/80 border-white/10"
+        >
+          {Menus.length < 1 ? (
+            <option>Sin menús</option>
+          ) : (
+            Menus.map((m, i) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))
+          )}
+        </select>
+      </div>
+    );
+  }
   function ConfirmModal() {
-    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6">
-                      <h3 className="text-lg font-semibold text-white">Confirmar acción</h3>
-                      <p className="mt-3 text-sm text-stone-300">{pendingAction === "start" ? "¿Iniciar la jornada de trabajo?" : "¿Terminar la jornada de trabajo?"}</p>
-                      <div className="mt-6 flex justify-end gap-3">
-                        <button
-                          className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-stone-200"
-                          onClick={() => { setShowConfirmModal(false); setPendingAction(null); }}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-black"
-                          onClick={async () => {
-                            if (!pendingAction) return;
-                            setActionLoading(true);
-                            const success = await activateWorkDay(pendingAction === "start");
-                            setActionLoading(false);
-                            setShowConfirmModal(false);
-                            // show toast notification (WorkdayToast will auto-dismiss)
-                            if (success) {
-                              const msg = pendingAction === "start" ? "Jornada iniciada." : "Jornada finalizada.";
-                              setWorkdayNotification(msg);
-                              setWorkdayNotificationType("success");
-                            } else {
-                              const msg = "Error al completar la acción";
-                              setWorkdayNotification(msg);
-                              setWorkdayNotificationType("error");
-                            }
-                            setPendingAction(null);
-                          }}
-                        >
-                          Confirmar
-                        </button>
-                      </div>
-                    </div>
-                  </div> 
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6">
+          <h3 className="text-lg font-semibold text-white">Confirmar acción</h3>
+          <p className="mt-3 text-sm text-stone-300">
+            {pendingAction === "start"
+              ? "¿Iniciar la jornada de trabajo?"
+              : "¿Terminar la jornada de trabajo?"}
+          </p>
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-stone-200"
+              onClick={() => {
+                setShowConfirmModal(false);
+                setPendingAction(null);
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-black"
+              onClick={async () => {
+                if (!pendingAction) return;
+                setActionLoading(true);
+                const success = await activateWorkDay(
+                  pendingAction === "start",
+                );
+                setActionLoading(false);
+                setShowConfirmModal(false);
+                // show toast notification (WorkdayToast will auto-dismiss)
+                if (success) {
+                  const msg =
+                    pendingAction === "start"
+                      ? "Jornada iniciada."
+                      : "Jornada finalizada.";
+                  setWorkdayNotification(msg);
+                  setWorkdayNotificationType("success");
+                } else {
+                  const msg = "Error al completar la acción";
+                  setWorkdayNotification(msg);
+                  setWorkdayNotificationType("error");
+                }
+                setPendingAction(null);
+              }}
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 }
