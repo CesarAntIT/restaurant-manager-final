@@ -3,7 +3,7 @@
     public class Ingredient
     {
         public required int Id { get; set; }
-        public required int RestaurantId { get; set; } // FK
+        public required int RestaurantId { get; set; }
         public required string Name { get; set; }
         public required decimal InitialQuantity { get; set; }
         public required decimal Quantity { get; set; }

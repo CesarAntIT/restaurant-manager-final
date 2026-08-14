@@ -42,7 +42,7 @@ namespace WebApi.Controllers
         [HttpPut("{id:int}/cancel")]
         [SwaggerOperation(
             Summary = "Cancelar una reserva",
-            Description = "Permite al usuario autenticado cancelar una reserva existente, siempre que esté pendiente"
+            Description = "Permite al usuario autenticado cancelar una reserva existente, siempre que no esté ya cancelada o atendida"
         )]
         public async Task<IActionResult> Cancel(int id)
         {

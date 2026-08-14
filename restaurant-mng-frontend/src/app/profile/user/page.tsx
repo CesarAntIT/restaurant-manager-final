@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import {
+  API_URL,
   LoadingScreen,
   PersonalInfoCard,
   ProfileHeader,
@@ -43,6 +45,7 @@ export default function ClientProfilePage() {
     "Postres",
   ]);
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
+  
 
   // Redirect owners that land on this route to their own page.
   useEffect(() => {
@@ -96,9 +99,8 @@ export default function ClientProfilePage() {
             signal: controller.signal,
           },
         );
-        setReservations(
-          Array.isArray(reservationsJson) ? reservationsJson : [],
-        );
+        const reservationsData = Array.isArray(reservationsJson) ? reservationsJson : [];
+        setReservations(reservationsData);
       } catch (error) {
         if (!controller.signal.aborted) {
           setApiMessage(
@@ -183,6 +185,14 @@ export default function ClientProfilePage() {
         initials={userView.initials}
         onLogout={handleLogout}
       />
+      <div className="mx-auto max-w-7xl px-5 py-4 sm:px-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-stone-100 transition hover:bg-white/10"
+        >
+          ← Back
+        </Link>
+      </div>
 
       
 
@@ -230,6 +240,8 @@ export default function ClientProfilePage() {
             favoriteCategories={favoriteCategories}
             reservations={reservations}
           />
+
+          {/* Sección de restaurantes guardados eliminada */}
 
           <section className="rounded-xl border border-[#2d180d] bg-[#180e08]/90 p-5">
             <div className="mb-5 border-b border-[#2d180d]/70 pb-4">
@@ -341,7 +353,7 @@ function ClientActivityPanel({
           Actividad reciente
         </p>
         <h2 className="mt-1 text-lg font-bold text-white">
-          Reservas y restaurantes guardados
+          Reservas
         </h2>
       </div>
 

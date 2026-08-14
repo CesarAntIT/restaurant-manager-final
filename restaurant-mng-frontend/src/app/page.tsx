@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/authStore";
+import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -25,15 +26,17 @@ type Restaurant = {
 };
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, token } = useAuthStore();
   const router = useRouter();
   const isAdmin = Boolean(user && (user.role === "Admin" || user.isAdmin));
+  const isOwner = Boolean(user && user.role === "Dueño" && !user.isAdmin);
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedIds, setSavedIds] = useState<number[]>([]);
   const [reservedIds, setReservedIds] = useState<number[]>([]);
+  const [pendingIds, setPendingIds] = useState<number[]>([]);
+  
   const [nameFilter, setNameFilter] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
@@ -160,16 +163,80 @@ export default function Home() {
     });
   }, [restaurants, nameFilter, cuisineFilter, cityFilter]);
 
-  function toggleSave(id: number) {
-    setSavedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    );
-  }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  function toggleReserve(id: number) {
-    setReservedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    );
+    const reservedStored = window.localStorage.getItem("reservedRestaurantIds");
+    if (reservedStored) {
+      try {
+        setReservedIds(JSON.parse(reservedStored));
+      } catch {
+        setReservedIds([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
+  }, [reservedIds]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    async function loadReservations() {
+      try {
+        const res = await fetch(`${API_URL}/api/reservations/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          return;
+        }
+
+        const json = await res.json();
+        const reservations: Array<{ restaurantId?: number | string; status?: string }> =
+          Array.isArray(json) ? json : json.data ?? [];
+        const confirmedRestaurants = Array.from(
+          new Set(
+            reservations
+              .filter(
+                (item) =>
+                  item.restaurantId != null &&
+                  item.status?.toLowerCase() === "confirmed",
+              )
+              .map((item) => Number(item.restaurantId)),
+          ),
+        );
+        const pendingRestaurants = Array.from(
+          new Set(
+            reservations
+              .filter(
+                (item) =>
+                  item.restaurantId != null &&
+                  item.status?.toLowerCase() === "pending",
+              )
+              .map((item) => Number(item.restaurantId)),
+          ),
+        );
+        setReservedIds(confirmedRestaurants);
+        setPendingIds(pendingRestaurants);
+      } catch {
+        // ignore fetch failures and keep existing state
+      }
+    }
+
+    loadReservations();
+  }, [isAuthenticated, token]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("reservedRestaurantIds", JSON.stringify(reservedIds));
+  }, [reservedIds]);
+
+  function handleReserveClick(id: number) {
+    router.push(`/restaurant/${id}/reserve`);
   }
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
@@ -197,12 +264,18 @@ export default function Home() {
           <nav className="flex flex-wrap items-center gap-3 text-sm text-stone-100/80">
             <a href="#hero" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</a>
             <a href="#restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</a>
+            {isOwner && (
+              <Link href="/owner/my-restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">
+                My Restaurants
+              </Link>
+            )}
             <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-white/10">About Us</a>
             {isAdmin && (
               <Link href="/admin/approvals" className="rounded-full bg-amber-400/15 px-4 py-2 text-amber-200 transition hover:bg-amber-400/25">
                 Approvals
               </Link>
             )}
+            <ProfileAvatarButton />
           </nav>
         </div>
       </header>
@@ -215,7 +288,7 @@ export default function Home() {
               Explora restaurantes de calidad y reserva tu mesa con estilo
             </h1>
             <p className="mx-auto max-w-2xl text-base text-stone-200 sm:text-lg">
-              Mira restaurantes verificados, guarda tus favoritos y reserva directamente desde la comodidad de la página.
+              Mira restaurantes verificados y reserva directamente desde la comodidad de la página.
             </p>
           </div>
           <form onSubmit={handleSearchSubmit} className="mx-auto w-full max-w-[960px] grid gap-4 sm:grid-cols-[2.5fr_1fr_1fr_auto_auto]">
@@ -313,20 +386,13 @@ export default function Home() {
                     </div>
                     <p className="text-sm leading-6 text-stone-200">{restaurant.address}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 justify-items-center">
+                  <div className="flex justify-center">
                     <button
-                      onClick={() => toggleSave(restaurant.id)}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold text-amber-100 transition hover:bg-[#3f291d] ${savedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : ""}`}
+                      onClick={() => handleReserveClick(restaurant.id)}
+                      className={`flex items-center justify-center gap-3 rounded-3xl bg-[#2f1f12]/95 px-6 py-3 text-sm font-semibold transition ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : pendingIds.includes(restaurant.id) ? "bg-cyan-500/20 text-cyan-100" : "text-amber-100 hover:bg-[#3f291d]"}`}
                     >
-                      <img src={savedIds.includes(restaurant.id) ? "/icon-guardado.png" : "/icon-guardar.png"} alt={savedIds.includes(restaurant.id) ? "Guardado" : "Guardar"} className="h-7 w-7" />
-                      <span>{savedIds.includes(restaurant.id) ? "Guardado" : "Guardar"}</span>
-                    </button>
-                    <button
-                      onClick={() => toggleReserve(restaurant.id)}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-3xl bg-[#2f1f12]/95 px-4 py-4 text-xs font-semibold text-amber-100 transition hover:bg-[#3f291d] ${reservedIds.includes(restaurant.id) ? "bg-[#3f291d]/95 text-amber-100" : ""}`}
-                    >
-                      <img src="/icon-reservar.png" alt="Reservar" className="h-7 w-7" />
-                      <span>{reservedIds.includes(restaurant.id) ? "Reservado" : "Reservar"}</span>
+                      <img src="/icon-reservar.png" alt="Reservar" className="h-6 w-6" />
+                      <span>{reservedIds.includes(restaurant.id) ? "Reservado" : pendingIds.includes(restaurant.id) ? "Reservando..." : "Reservar"}</span>
                     </button>
                   </div>
                 </div>
@@ -349,7 +415,7 @@ export default function Home() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl bg-[#3f291d]/90 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-amber-300">Fácil</p>
-                <p className="mt-3 text-sm text-stone-200">Busca, guarda y reserva en pocos clics.</p>
+                <p className="mt-3 text-sm text-stone-200">Busca y reserva en pocos clics.</p>
               </div>
               <div className="rounded-3xl bg-[#3f291d]/90 p-6">
                 <p className="text-sm uppercase tracking-[0.35em] text-amber-300">Confiable</p>

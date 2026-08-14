@@ -70,6 +70,59 @@ namespace WebApi.Controllers.v1
             }
         }
 
+        [HttpPost("sale")]
+        [Authorize(Roles = "Owner,Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Registrar venta de plato",
+            Description = "Permite registrar la venta de un plato durante la jornada laboral y actualizar automáticamente el stock de ingredientes."
+        )]
+        public async Task<IActionResult> RegisterDishSale(int dishId, int quantity)
+        {
+            var traceId = $"00-register-sale-{Guid.NewGuid()}";
+
+            try
+            {
+                var result = await _workDayService.RegisterDishSaleAsync(dishId, quantity);
+
+                if (!result)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "SALE_ERROR",
+                            message = "No se pudo registrar la venta del plato.",
+                            traceId
+                        }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Venta registrada y stock actualizado correctamente."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    error = new
+                    {
+                        code = "INTERNAL_SERVER_ERROR",
+                        message = "Ocurrió un error inesperado al registrar la venta.",
+                        traceId
+                    }
+                });
+            }
+        }
+
         [HttpPost("close/{restaurantId}")]
         [Authorize(Roles = "Owner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -122,5 +175,34 @@ namespace WebApi.Controllers.v1
                 });
             }
         }
+        [HttpGet("history/{restaurantId}")]
+        [Authorize(Roles = "Owner,Admin")]
+        [SwaggerOperation(
+            Summary = "Historial de jornadas laborales",
+            Description = "Devuelve todas las jornadas laborales (abiertas y cerradas) de un restaurante."
+        )]
+        public async Task<IActionResult> GetWorkDayHistory(int restaurantId)
+        {
+            var result = await _workDayService.GetWorkDayHistoryAsync(restaurantId);
+            return Ok(new { success = true, data = result });
+        }
+
+        [HttpGet("active/{restaurantId}")]
+        [Authorize(Roles = "Owner,Admin")]
+        [SwaggerOperation(
+            Summary = "Consultar jornada activa",
+            Description = "Verifica si existe una jornada laboral activa para un restaurante."
+        )]
+        public async Task<IActionResult> GetActiveWorkDay(int restaurantId)
+        {
+            var result = await _workDayService.GetActiveWorkDayAsync(restaurantId);
+            if (result == null)
+            {
+                return Ok(new { success = false, message = "No hay jornada activa." });
+            }
+
+            return Ok(new { success = true, data = result });
+        }
+
     }
 }

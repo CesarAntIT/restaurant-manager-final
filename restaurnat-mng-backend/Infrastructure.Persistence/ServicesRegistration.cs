@@ -1,5 +1,4 @@
-﻿//using Application.Interfaces;
-using Domain.Interfaces;
+﻿using Domain.Interfaces;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +28,7 @@ namespace Infrastructure.Persistence
             services.AddScoped<IDishIngredientRepository, DishIngredientRepository>();
             services.AddScoped<IIngredientRepository, IngredientRepository>();
             services.AddScoped<IMenuRepository, MenuRepository>();
+            services.AddScoped<IMenuDishRepository, MenuDishRepository>();
             services.AddScoped<IPredictionIARepository, PredictionIARepository>();
             services.AddScoped<IReservationRepository, ReservationRepository>();
             services.AddScoped<IRestaurantRepository, RestaurantRepository>();

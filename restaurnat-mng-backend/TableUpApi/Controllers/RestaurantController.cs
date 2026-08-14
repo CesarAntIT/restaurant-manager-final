@@ -74,7 +74,6 @@ namespace TableUpApi.Controllers
 
         }
 
-
         [HttpGet("my-restaurants")]
         [Authorize(Roles = "Owner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
