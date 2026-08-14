@@ -223,8 +223,23 @@ export default function WorkDayPage() {
       checkRestaurant();
       getActiveWorkDay();
     }
-  },[restaurantId, token]);
+  },[restaurantId, token])
 
+  if (!isAuthenticated) {
+    return (
+      <div className="text-center">
+        <div className="p-8 text-center text-stone-100">
+          Es necesario una cuenta para acceder a esta funcionalidad
+        </div>
+        <Link
+          href="/login"
+          className="rounded-full px-4 py-2 transition bg-amber-300 font-bold text-black hover:bg-amber-500"
+        >
+          Ir a Iniciar Sesión
+        </Link>
+      </div>
+    );
+  }
   if (!isOwnerRestaurant) {
     {
         return (
@@ -243,36 +258,7 @@ export default function WorkDayPage() {
         );
       }
   }
-  if (!isAuthenticated) {
-    return (
-      <div className="text-center">
-        <div className="p-8 text-center text-stone-100">
-          Es necesario una cuenta para acceder a esta funcionalidad
-        </div>
-        <Link
-          href="/login"
-          className="rounded-full px-4 py-2 transition bg-amber-300 font-bold text-black hover:bg-amber-500"
-        >
-          Ir a Iniciar Sesión
-        </Link>
-      </div>
-    );
-  }
-  if (!isOwner) {
-    return (
-      <div className="text-center">
-        <div className="p-8 text-center text-stone-100">
-          Su cuenta no es del rol requerido
-        </div>
-        <Link
-          href="/login"
-          className="rounded-full px-4 py-2 transition bg-amber-300 font-bold text-black hover:bg-amber-500"
-        >
-          Iniciar sesión con Otra cuenta
-        </Link>
-      </div>
-    );
-  }
+
 
   return (
     <div>
@@ -309,6 +295,12 @@ export default function WorkDayPage() {
           >
             Work Days
           </Link>
+          <Link
+            href={`/owner/restaurants/${restaurantId}/menus`}
+            className="rounded-full px-4 py-2 transition hover:bg-white/10"
+          >
+            Menus
+          </Link>
         </nav>
         <div className="relative z-10 flex items-center gap-3">
           <ProfileAvatarButton />
@@ -330,7 +322,6 @@ export default function WorkDayPage() {
               </Link>
             </div>
 
-            {/*Eventually this Div will become a single button instead of 2*/}
             <div className="justify-between mb-2">
               <button
                 className={`p-2 rounded-2xl font-bold mr-3 ${isWorkdayActive || isCheckingActive || actionLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-500 hover:bg-blue-800"}`}
@@ -362,61 +353,10 @@ export default function WorkDayPage() {
             )}
 
             {showConfirmModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                <div className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6">
-                  <h3 className="text-lg font-semibold text-white">Confirmar acción</h3>
-                  <p className="mt-3 text-sm text-stone-300">{pendingAction === "start" ? "¿Iniciar la jornada de trabajo?" : "¿Terminar la jornada de trabajo?"}</p>
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button
-                      className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-stone-200"
-                      onClick={() => { setShowConfirmModal(false); setPendingAction(null); }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-black"
-                      onClick={async () => {
-                        if (!pendingAction) return;
-                        setActionLoading(true);
-                        const success = await activateWorkDay(pendingAction === "start");
-                        setActionLoading(false);
-                        setShowConfirmModal(false);
-                        // show toast notification (WorkdayToast will auto-dismiss)
-                        if (success) {
-                          const msg = pendingAction === "start" ? "Jornada iniciada." : "Jornada finalizada.";
-                          setWorkdayNotification(msg);
-                          setWorkdayNotificationType("success");
-                        } else {
-                          const msg = "Error al completar la acción";
-                          setWorkdayNotification(msg);
-                          setWorkdayNotificationType("error");
-                        }
-                        setPendingAction(null);
-                      }}
-                    >
-                      Confirmar
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ConfirmModal/>
             )}
-            <p>Current Started: 31/07/2026</p>
           </div>
           <hr className="mt-5 mb-5 " />
-          <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-white">Historial de ventas</h2>
-                <p className="text-sm text-stone-400">Ver ventas detalladas por workday.</p>
-              </div>
-              <Link
-                href={`/owner/restaurants/${restaurantId}/workdays/history`}
-                className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-600"
-              >
-                Ver historial de ventas
-              </Link>
-            </div>
-          </div>
           <div>
             <h2>Add Work Day Sales</h2>
             <div>
@@ -507,4 +447,44 @@ export default function WorkDayPage() {
         />
     </div>
   );
+
+  function ConfirmModal() {
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6">
+                      <h3 className="text-lg font-semibold text-white">Confirmar acción</h3>
+                      <p className="mt-3 text-sm text-stone-300">{pendingAction === "start" ? "¿Iniciar la jornada de trabajo?" : "¿Terminar la jornada de trabajo?"}</p>
+                      <div className="mt-6 flex justify-end gap-3">
+                        <button
+                          className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-stone-200"
+                          onClick={() => { setShowConfirmModal(false); setPendingAction(null); }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-black"
+                          onClick={async () => {
+                            if (!pendingAction) return;
+                            setActionLoading(true);
+                            const success = await activateWorkDay(pendingAction === "start");
+                            setActionLoading(false);
+                            setShowConfirmModal(false);
+                            // show toast notification (WorkdayToast will auto-dismiss)
+                            if (success) {
+                              const msg = pendingAction === "start" ? "Jornada iniciada." : "Jornada finalizada.";
+                              setWorkdayNotification(msg);
+                              setWorkdayNotificationType("success");
+                            } else {
+                              const msg = "Error al completar la acción";
+                              setWorkdayNotification(msg);
+                              setWorkdayNotificationType("error");
+                            }
+                            setPendingAction(null);
+                          }}
+                        >
+                          Confirmar
+                        </button>
+                      </div>
+                    </div>
+                  </div> 
+  }
 }
