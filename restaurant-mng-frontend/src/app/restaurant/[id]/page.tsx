@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import MenuList from "./menu-list";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
@@ -23,7 +24,6 @@ type Review = {
     email?: string;
   } | null;
 };
-
 type Restaurant = {
   id: number;
   name: string;
@@ -32,6 +32,7 @@ type Restaurant = {
   images?: string[];
   description: string;
 };
+
 
 function computeStars(r: Review) {
   const avg = (r.food + r.ambience + r.service + r.personal) / 4;
@@ -152,7 +153,6 @@ export default function RestaurantDetail() {
 
     return false;
   }
-
   async function loadReviews() {
     try {
       setIsLoadingReviews(true);
@@ -346,6 +346,8 @@ export default function RestaurantDetail() {
               </div>
             </div>
 
+            <MenuList restaurantId={restaurant.id}/>
+            
             <section className="rounded-2xl bg-[#2f1f12]/40 p-6">
               <h3 className="text-lg font-semibold">Ratings & Reviews</h3>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">

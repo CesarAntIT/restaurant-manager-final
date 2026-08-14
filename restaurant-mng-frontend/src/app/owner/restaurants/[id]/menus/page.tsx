@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ProfileAvatarButton from "@/components/ProfileAvatarButton";
-import { create } from "zustand";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:7188";
 
 type Dish = {
@@ -15,7 +14,6 @@ type Dish = {
   description: string;
   price: number;
 };
-
 type Menu = {
   id: number;
   name: string;

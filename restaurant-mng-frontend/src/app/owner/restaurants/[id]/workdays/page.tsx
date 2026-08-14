@@ -76,7 +76,7 @@ export default function WorkDayPage() {
     setQuantity(0);
     setSelectedDish(null);
     setSearchVal("");
-    getDishes();
+    getDishesPerMenu();
   }
 
   //API calling Functions
