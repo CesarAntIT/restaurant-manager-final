@@ -1,6 +1,6 @@
+using System.Reflection;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace Infrastructure.Persistence.Contexts
 {
@@ -23,6 +23,7 @@ namespace Infrastructure.Persistence.Contexts
         public DbSet<Ingredient> Ingredients { get; set; }
         public DbSet<DishIngredient> DishIngredients { get; set; }
         public DbSet<PredictionIA> PredictionsIA { get; set; }
+        public DbSet<HistoricalDemandEntry> HistoricalDemandEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

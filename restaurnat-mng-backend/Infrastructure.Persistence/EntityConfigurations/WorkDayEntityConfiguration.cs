@@ -25,9 +25,9 @@ namespace Infrastructure.Persistence.EntityConfigurations
                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(w => w.WorkDayItems)
-                   .WithOne()
-                   .HasForeignKey(wi => wi.WorkDayId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                    .WithOne(wi => wi.WorkDay)
+                    .HasForeignKey(wi => wi.WorkDayId)
+                    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

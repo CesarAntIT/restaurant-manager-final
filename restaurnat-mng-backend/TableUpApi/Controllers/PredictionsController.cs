@@ -55,6 +55,43 @@ namespace WebApi.Controllers.v1
                 });
             }
         }
+        [HttpPost("{restaurantId}/historical-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [SwaggerOperation(
+    Summary = "Registrar dato histórico manual",
+    Description = "Permite al dueño cargar un registro de afluencia/ventas de un día pasado, útil cuando aún no hay suficientes reservas o ventas reales en el sistema."
+)]
+        public async Task<IActionResult> AddHistoricalData(int restaurantId, [FromBody] HistoricalDemandEntryCreateDto dto)
+        {
+            dto.RestaurantId = restaurantId;
+            var result = await _predictionService.AddHistoricalDataAsync(dto);
+            return Ok(new { success = true, data = result });
+        }
+
+        [HttpPost("{restaurantId}/historical-data/bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "Carga masiva de datos históricos",
+            Description = "Registra varios días históricos de una sola vez (por ejemplo, importados de un Excel)."
+        )]
+        public async Task<IActionResult> AddHistoricalDataBulk(int restaurantId, [FromBody] List<HistoricalDemandEntryCreateDto> dtos)
+        {
+            foreach (var dto in dtos) dto.RestaurantId = restaurantId;
+            var result = await _predictionService.AddHistoricalDataBulkAsync(dtos);
+            return Ok(new { success = true, data = result });
+        }
+
+        [HttpGet("{restaurantId}/historical-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "Listar datos históricos manuales",
+            Description = "Devuelve los registros históricos cargados manualmente para un restaurante."
+        )]
+        public async Task<IActionResult> GetHistoricalData(int restaurantId)
+        {
+            var result = await _predictionService.GetHistoricalDataAsync(restaurantId);
+            return Ok(new { success = true, data = result });
+        }
 
         [HttpGet("{restaurantId}/history")]
         [ProducesResponseType(StatusCodes.Status200OK)]

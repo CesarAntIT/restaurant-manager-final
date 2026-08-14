@@ -8,6 +8,9 @@
         public required DateTime PredictionDate { get; set; }
         public required int EstimatedDemand { get; set; }
         public string? StockRecommendation { get; set; }
+        public int SampleSizeUsed { get; set; }
+        public string ConfidenceLevel { get; set; } = "Baja";
+        public bool GeneratedByAI { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
