@@ -103,45 +103,82 @@ export default function WorkDayPage() {
         status: item.status,
       }));
 
-      setMenuList(menus);
-      setCurrentMenu(menus[0]);  
+      menus.push({
+        id: -1,
+        name: "Todos los Platillos",
+        description: "",
+        status: "Active",
+      })
       
+      setMenuList(menus);
+      setCurrentMenu(menus[0]);
     } catch (e) {
       console.error(e);
     }
   }
+  
   async function handleChangeMenu(id: number) {
     setCurrentMenu(Menus.filter((m) => m.id === id)[0]);
   }
-  async function getDishesPerMenu() {
+
+  async function getDishesPerMenu() {   
     try {
-      const res = await fetch(
-        `${API_URL}/api/menudishes/menu/${currentMenu?.id}/dishes`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
+      let res: Response;
+      let dish: Dish[];
+      
+      if (currentMenu?.id == -1) {
+        res = await fetch(
+          `${API_URL}/api/restaurants/${restaurantId}/dishes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
+        );
 
-      if (!res.ok) {
-        throw new Error(`${res}`);
+        if (!res.ok) {
+          throw new Error(`${res}`);
+        }
+  
+        const data = await res.json();
+        dish = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+        }));
       }
+      
+      else {
+        res = await fetch(
+          `${API_URL}/api/menudishes/menu/${currentMenu?.id}/dishes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
-      const data = await res.json();
-      const dish: Dish[] = data.data.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        price: item.price,
-      }));
-
+        if (!res.ok) {
+          throw new Error(`${res}`);
+        }
+  
+        const data = await res.json();
+        dish = data.data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+        }));
+      }
+      
       setDishes(dish);
     } catch (e) {
       console.log("Dishes Not Found");
       setDishes([]);
     }
   }
+
   async function postSale() {
     try {
       const res = await fetch(
@@ -409,7 +446,7 @@ export default function WorkDayPage() {
           </div>
           <hr className="mt-5 mb-5 " />
           <div>
-            <h2>Add Work Day Sales</h2> <MenuSelect />
+            <h2>Selected Menu: </h2> <MenuSelect />
             <div>
               <div>
                 <div className="flex items-center">
