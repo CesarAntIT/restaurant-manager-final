@@ -1,13 +1,8 @@
 using Application.Dtos.User;
 using Application.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Win32;
-using Org.BouncyCastle.Pqc.Crypto.Lms;
 using Swashbuckle.AspNetCore.Annotations;
-using System.Data;
 using System.Security.Claims;
-using System.Security.Principal;
 
 namespace TableUpApi.Controllers
 {
@@ -135,7 +130,7 @@ namespace TableUpApi.Controllers
 
             try
             {
-                var result = await userAccountService.RegisterUser(dto, null, true);
+                var result = await userAccountService.RegisterUser(dto, true);
 
                 return StatusCode(StatusCodes.Status201Created, new
                 {
