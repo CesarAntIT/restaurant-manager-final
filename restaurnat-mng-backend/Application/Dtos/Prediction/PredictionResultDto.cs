@@ -12,5 +12,6 @@ namespace Application.Dtos.Prediction
 
         public int SampleSizeUsed { get; set; }
         public string ConfidenceLevel { get; set; } = "Baja";
+        public bool GeneratedByAI { get; set; }
     }
 }

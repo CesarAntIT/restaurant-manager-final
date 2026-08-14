@@ -9,15 +9,20 @@ namespace Infrastructure.Persistence.EntityConfigurations
         public void Configure(EntityTypeBuilder<WorkDayItem> builder)
         {
             builder.ToTable("WorkDayItems");
+
             builder.HasKey(wi => wi.Id);
 
-            builder.Property(wi => wi.QuantitySold).IsRequired();
-            builder.Property(wi => wi.PriceUnit).HasColumnType("decimal(10,2)").IsRequired();
+            builder.Property(wi => wi.QuantitySold)
+                .IsRequired();
+
+            builder.Property(wi => wi.PriceUnit)
+                .HasColumnType("decimal(10,2)")
+                .IsRequired();
 
             builder.HasOne(wi => wi.Dish)
-                   .WithMany()
-                   .HasForeignKey(wi => wi.DishId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                .WithMany()
+                .HasForeignKey(wi => wi.DishId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

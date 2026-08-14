@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TableUpContextDB))]
-    [Migration("20260814032918_FixWorkDayRelation")]
-    partial class FixWorkDayRelation
+    [Migration("20260814210846_AddGeneratedByAIAndHistoricalDemand")]
+    partial class AddGeneratedByAIAndHistoricalDemand
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -75,6 +75,44 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasIndex("IngredientId");
 
                     b.ToTable("DishIngredients", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.HistoricalDemandEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ItemsSold")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MenuId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PeopleCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MenuId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("HistoricalDemandEntries");
                 });
 
             modelBuilder.Entity("Domain.Entities.Ingredient", b =>
@@ -173,11 +211,18 @@ namespace Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ConfidenceLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("EstimatedDemand")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("GeneratedByAI")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("MenuId")
                         .HasColumnType("integer");
@@ -186,6 +231,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("RestaurantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SampleSizeUsed")
                         .HasColumnType("integer");
 
                     b.Property<string>("StockRecommendation")
@@ -421,16 +469,11 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("WorkDayId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("WorkDayId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DishId");
 
                     b.HasIndex("WorkDayId");
-
-                    b.HasIndex("WorkDayId1");
 
                     b.ToTable("WorkDayItems", (string)null);
                 });
@@ -452,6 +495,23 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Dish");
 
                     b.Navigation("Ingredient");
+                });
+
+            modelBuilder.Entity("Domain.Entities.HistoricalDemandEntry", b =>
+                {
+                    b.HasOne("Domain.Entities.Menu", "Menu")
+                        .WithMany()
+                        .HasForeignKey("MenuId");
+
+                    b.HasOne("Domain.Entities.Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Menu");
+
+                    b.Navigation("Restaurant");
                 });
 
             modelBuilder.Entity("Domain.Entities.Ingredient", b =>
@@ -573,15 +633,11 @@ namespace Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.WorkDay", null)
+                    b.HasOne("Domain.Entities.WorkDay", "WorkDay")
                         .WithMany("WorkDayItems")
                         .HasForeignKey("WorkDayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Domain.Entities.WorkDay", "WorkDay")
-                        .WithMany()
-                        .HasForeignKey("WorkDayId1");
 
                     b.Navigation("Dish");
 

@@ -45,6 +45,7 @@ builder.Services.AddHttpClient<IAIService, GeminiService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IPredictionIARepository, PredictionIARepository>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.AddScoped<IHistoricalDemandRepository, HistoricalDemandRepository>();
 
 builder.Services.AddCors(options =>
 {
