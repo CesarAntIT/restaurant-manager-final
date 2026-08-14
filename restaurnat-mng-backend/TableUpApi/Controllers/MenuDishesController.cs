@@ -8,7 +8,7 @@ namespace WebApi.Controllers
     [SwaggerTag("Endpoints para la gestión de relación Menú-Platos")]
     [ApiController]
     [Route("api/menudishes")]
-    [Authorize(Roles = "Admin,Owner")]
+    [Authorize(Roles = "Owner")]
     public class MenuDishesController : ControllerBase
     {
         private readonly IMenuDishService menuDishService;
@@ -69,6 +69,7 @@ namespace WebApi.Controllers
         [HttpGet("menu/{menuId}/dishes")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [AllowAnonymous]
         [SwaggerOperation(
             Summary = "Obtener platos de un menú",
             Description = "Devuelve el listado de platos asociados a un menú específico"

@@ -134,21 +134,22 @@ export default function ReservePage() {
       });
   }
 
-  return (
-    <main>
+ return (
+    <main className="min-h-screen bg-[#0d0705] text-stone-200">
       <div className="pointer-events-none fixed inset-0 bg-cover bg-center opacity-100" style={{ backgroundImage: `url('/restaurant_bg.jpg'), url('${FALLBACK_BACKGROUND}')` }} />
-      <div className="pointer-events-none fixed inset-0 bg-black/55" />
+      <div className="pointer-events-none fixed inset-0 bg-[#0d0705]/80 backdrop-blur-[2px]" />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-4">
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between border-b border-[#2d180d]/60 bg-[#120804]/60 px-6 py-4 backdrop-blur-md">
         <div className="flex items-center gap-3 text-stone-100">
-          <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-2 sm:flex">
-            <Image src="/tableup-logo.png" alt="TableUp logo" width={34} height={34} className="rounded-full" />
-            <span className="text-sm font-semibold tracking-wide">TableUp</span>
+          <div className="hidden items-center gap-2 rounded-full border border-amber-900/40 bg-amber-950/20 px-3.5 py-1.5 shadow-inner sm:flex">
+            <Image src="/tableup-logo.png" alt="TableUp logo" width={34} height={34} className="rounded-full ring-2 ring-amber-600/30" />
+            <span className="text-sm font-semibold tracking-wide text-amber-100">TableUp</span>
           </div>
         </div>
-        <nav className="relative z-10 flex items-center gap-3 text-sm text-stone-200">
-          <Link href="/" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</Link>
-          <Link href="/restaurants" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</Link>
+        <nav className="relative z-10 flex items-center gap-2 text-sm text-stone-300">
+          <Link href="/" className="rounded-full px-4 py-2 transition-all hover:bg-amber-900/20 hover:text-amber-200">Home</Link>
+          <Link href="/restaurants" className="rounded-full px-4 py-2 transition-all hover:bg-amber-900/20 hover:text-amber-200">Restaurants</Link>
         </nav>
         <div className="relative z-10 flex items-center gap-3">
           <ProfileAvatarButton />
@@ -156,79 +157,79 @@ export default function ReservePage() {
       </header>
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl items-start justify-center px-6 py-8">
-        <div className="w-full rounded-[2rem] border border-white/10 bg-[#0f0906]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8">
+        <div className="w-full rounded-4xl border border-[#3a2013]/60 bg-gradient-to-b from-[#180d07]/90 via-[#120804]/90 to-[#0c0503]/90 p-6 shadow-2xl shadow-black/80 backdrop-blur-3xl sm:p-8">
 
           <div className="mb-6">
-            <button onClick={() => router.back()} className="text-xs text-stone-400 hover:text-white mb-2 flex items-center gap-1">
+            <button onClick={() => router.back()} className="text-xs text-amber-200/70 hover:text-amber-100 mb-2 flex items-center gap-1 transition-all">
               ← Volver
             </button>
-            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Hacer una Reserva</h1>
+            <h1 className="bg-gradient-to-r from-amber-100 via-stone-200 to-amber-300 bg-clip-text text-3xl font-semibold text-transparent sm:text-4xl">Hacer una Reserva</h1>
             <p className="text-sm text-stone-400 mt-1">Selecciona una mesa, fecha y hora para tu visita</p>
           </div>
 
-          {error && <div className="mb-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-200">{error}</div>}
-          {success && <div className="mb-4 rounded-xl border border-emerald-800/50 bg-emerald-950/30 p-3 text-sm text-emerald-200">{success}</div>}
+          {error && <div className="mb-6 rounded-2xl border border-rose-800/50 bg-rose-950/40 p-4 text-sm text-rose-200 backdrop-blur-md shadow-lg">{error}</div>}
+          {success && <div className="mb-6 rounded-2xl border border-emerald-800/50 bg-emerald-950/40 p-4 text-sm text-emerald-200 backdrop-blur-md shadow-lg">{success}</div>}
 
           {/* Fecha, Hora y Personas */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div>
-              <label className="block text-xs font-mono uppercase text-amber-400 mb-1">Fecha</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/70 mb-1">Fecha</label>
               <input
                 type="date"
                 value={date}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-[#2e1910] bg-[#0e0b04] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500 [color-scheme:dark]"
+                className="w-full rounded-xl border border-[#3a2013] bg-[#0c0503] px-3.5 py-2.5 text-sm text-stone-100 outline-none focus:border-amber-600/80 focus:ring-1 focus:ring-amber-600/80 transition-all [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block text-xs font-mono uppercase text-amber-400 mb-1">Hora</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/70 mb-1">Hora</label>
               <input
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-[#2e1910] bg-[#0e0b04] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500 [color-scheme:dark]"
+                className="w-full rounded-xl border border-[#3a2013] bg-[#0c0503] px-3.5 py-2.5 text-sm text-stone-100 outline-none focus:border-amber-600/80 focus:ring-1 focus:ring-amber-600/80 transition-all [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block text-xs font-mono uppercase text-amber-400 mb-1">Personas</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/70 mb-1">Personas</label>
               <input
                 type="number"
                 min={1}
                 value={people}
                 onChange={(e) => setPeople(e.target.value)}
-                className="w-full rounded-lg border border-[#2e1910] bg-[#0e0b04] px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+                className="w-full rounded-xl border border-[#3a2013] bg-[#0c0503] px-3.5 py-2.5 text-sm text-stone-100 outline-none focus:border-amber-600/80 focus:ring-1 focus:ring-amber-600/80 transition-all"
               />
             </div>
           </div>
 
           {/* Mesas disponibles */}
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-white mb-4">Mesas Disponibles</h2>
+            <h2 className="text-lg font-bold text-amber-100 mb-4 tracking-wide">Mesas Disponibles</h2>
             {loading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-stone-300">Cargando mesas...</div>
+              <div className="rounded-2xl border border-[#3a2013]/60 bg-[#120704]/60 p-8 text-center text-sm text-stone-400">Cargando mesas...</div>
             ) : tables.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-stone-300">No hay mesas disponibles en este momento.</div>
+              <div className="rounded-2xl border border-[#3a2013]/60 bg-[#120704]/60 p-8 text-center text-sm text-stone-400">No hay mesas disponibles en este momento.</div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {tables.map((table) => (
                   <button
                     key={table.id}
                     onClick={() => setSelectedTable(selectedTable?.id === table.id ? null : table)}
-                    className={`rounded-2xl border p-4 text-left transition ${
+                    className={`rounded-2xl border p-4 text-left transition-all ${
                       selectedTable?.id === table.id
-                        ? "border-amber-500 bg-amber-500/10"
-                        : "border-white/10 bg-slate-950/70 hover:border-white/30"
+                        ? "border-amber-500/80 bg-gradient-to-b from-amber-900/30 to-amber-950/40 shadow-lg shadow-amber-950/50"
+                        : "border-[#3a2013]/80 bg-[#120704]/90 hover:border-amber-900/50 hover:bg-[#1a0c06]/80"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-white font-semibold">{table.numberMesa}</span>
+                      <span className="text-amber-100 font-bold">{table.numberMesa}</span>
                       {selectedTable?.id === table.id && (
-                        <span className="text-xs text-amber-400 font-bold">✓ Seleccionada</span>
+                        <span className="text-xs text-amber-300 font-bold">✓ Seleccionada</span>
                       )}
                     </div>
-                    <p className="text-sm text-stone-400">{table.seats} personas</p>
-                    <span className="mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-300">
+                    <p className="text-xs text-stone-400">{table.seats} personas</p>
+                    <span className="mt-3 inline-block rounded-full border border-emerald-500/40 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-300 shadow-sm shadow-emerald-950/50">
                       Disponible
                     </span>
                   </button>
@@ -239,14 +240,14 @@ export default function ReservePage() {
 
           {/* Resumen y botón */}
           {selectedTable && (
-            <div className="rounded-2xl border border-white/10 bg-[#1a100a]/90 p-5 mb-6">
-              <h3 className="text-sm font-mono uppercase text-amber-400 mb-3">Resumen de tu reserva</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm text-stone-300">
-                <p>Mesa: <span className="text-white font-semibold">{selectedTable.numberMesa}</span></p>
-                <p>Capacidad: <span className="text-white font-semibold">{selectedTable.seats} personas</span></p>
-                <p>Fecha: <span className="text-white font-semibold">{date || "—"}</span></p>
-                <p>Hora: <span className="text-white font-semibold">{time || "—"}</span></p>
-                <p>Personas: <span className="text-white font-semibold">{people}</span></p>
+            <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1a0e08] to-[#120804] p-5 mb-6 shadow-xl backdrop-blur-3xl">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-200/80 mb-3">Resumen de tu reserva</h3>
+              <div className="grid grid-cols-2 gap-2.5 text-sm text-stone-300">
+                <p>Mesa: <span className="text-amber-100 font-semibold">{selectedTable.numberMesa}</span></p>
+                <p>Capacidad: <span className="text-amber-100 font-semibold">{selectedTable.seats} personas</span></p>
+                <p>Fecha: <span className="text-amber-100 font-semibold">{date || "—"}</span></p>
+                <p>Hora: <span className="text-amber-100 font-semibold">{time || "—"}</span></p>
+                <p>Personas: <span className="text-amber-100 font-semibold">{people}</span></p>
               </div>
             </div>
           )}
@@ -254,14 +255,14 @@ export default function ReservePage() {
           <button
             onClick={handleReserve}
             disabled={submitting}
-            className="w-full rounded-xl bg-amber-600 py-3 text-sm font-bold uppercase tracking-wider text-neutral-950 transition hover:bg-amber-500 disabled:opacity-60"
+            className="w-full rounded-2xl border border-amber-600/50 bg-gradient-to-r from-amber-700 to-amber-600 py-3.5 text-sm font-bold uppercase tracking-wider text-stone-100 shadow-lg shadow-amber-950/50 transition-all hover:from-amber-600 hover:to-amber-500 disabled:opacity-60 active:scale-[0.99]"
           >
             {submitting ? "Procesando reserva..." : "Confirmar Reserva"}
           </button>
 
           {!isAuthenticated && (
-            <p className="text-center text-xs text-stone-400 mt-3">
-              Debes <Link href="/login" className="text-amber-500 hover:underline">iniciar sesión</Link> para hacer una reserva.
+            <p className="text-center text-xs text-stone-400 mt-4">
+              Debes <Link href="/login" className="text-amber-300 hover:underline">iniciar sesión</Link> para hacer una reserva.
             </p>
           )}
 

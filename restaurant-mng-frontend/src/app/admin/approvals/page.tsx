@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuthStore } from "../../../store/authStore";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import UnauthorizedPage from "@/app/unauthorized/page";
 import ProfileAvatarButton from "@/components/ProfileAvatarButton";
 
@@ -26,22 +26,32 @@ type RequestItem = {
   images: string[];
 };
 
-const FALLBACK_BACKGROUND = "https://images.unsplash.com/photo-1541544181069-3ede9f8b9500?auto=format&fit=crop&w=1600&q=80";
+const FALLBACK_BACKGROUND =
+  "https://images.unsplash.com/photo-1541544181069-3ede9f8b9500?auto=format&fit=crop&w=1600&q=80";
 
 export default function AdminApprovalsPage() {
   const { user, token, isAuthenticated } = useAuthStore();
+  const router = useRouter();
 
   const isAdmin = Boolean(
-    user && (user.role === "Admin" || user.role === "Admin" || user.isAdmin)
+    user && (user.role === "Admin" || user.role === "Admin" || user.isAdmin),
   );
 
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{ id: number; name: string; status: string } | null>(null);
-  const [undoData, setUndoData] = useState<{ restaurant: RequestItem; previousStatus: string } | null>(null);
-  const [notificationTimeout, setNotificationTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [notification, setNotification] = useState<{
+    id: number;
+    name: string;
+    status: string;
+  } | null>(null);
+  const [undoData, setUndoData] = useState<{
+    restaurant: RequestItem;
+    previousStatus: string;
+  } | null>(null);
+  const [notificationTimeout, setNotificationTimeout] =
+    useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
@@ -62,7 +72,9 @@ export default function AdminApprovalsPage() {
 
       const response = await res.json();
       const restaurantData = response.data || response;
-      const pendingRestaurants = Array.isArray(restaurantData) ? restaurantData.filter((r) => r.status === "Pending") : [];
+      const pendingRestaurants = Array.isArray(restaurantData)
+        ? restaurantData.filter((r) => r.status === "Pending")
+        : [];
       setRequests(pendingRestaurants);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -71,29 +83,26 @@ export default function AdminApprovalsPage() {
     }
   }
 
-  async function changeRestaurantStatus(
-    restaurantId: number,
-    status: string
-  ) {
+  async function changeRestaurantStatus(restaurantId: number, status: string) {
     try {
       setProcessingId(String(restaurantId));
       setError(null);
-      
+
       // Encontrar el restaurante en la lista
       const restaurant = requests.find((r) => r.id === restaurantId);
       if (!restaurant) throw new Error("Restaurante no encontrado");
-      
+
       const res = await fetch(
         `${API_URL}/api/restaurants/change-status/${restaurantId}`,
         {
           method: "PATCH",
           headers: {
-            "accept": "*/*",
-            "Authorization": token ? `Bearer ${token}` : "",
+            accept: "*/*",
+            Authorization: token ? `Bearer ${token}` : "",
             "Content-Type": "application/json",
           },
           body: JSON.stringify(status),
-        }
+        },
       );
 
       if (!res.ok) throw new Error(await res.text());
@@ -153,12 +162,12 @@ export default function AdminApprovalsPage() {
         {
           method: "PATCH",
           headers: {
-            "accept": "*/*",
-            "Authorization": token ? `Bearer ${token}` : "",
+            accept: "*/*",
+            Authorization: token ? `Bearer ${token}` : "",
             "Content-Type": "application/json",
           },
           body: JSON.stringify("Pending"),
-        }
+        },
       );
 
       if (!res.ok) throw new Error(await res.text());
@@ -169,7 +178,7 @@ export default function AdminApprovalsPage() {
       // Limpiar notificación y datos de deshacer
       setNotification(null);
       setUndoData(null);
-      
+
       if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         setNotificationTimeout(null);
@@ -187,38 +196,67 @@ export default function AdminApprovalsPage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      redirect('/unauthorized')
-    );
+    return redirect("/unauthorized");
   }
 
   if (!isAdmin) {
     return (
       <div className="p-8 text-center text-stone-100">
         No tienes permisos de administrador.
-        <UnauthorizedPage/>
+        <UnauthorizedPage />
       </div>
     );
   }
 
   return (
     <main className="relative min-h-screen text-stone-100">
-      <div className="pointer-events-none fixed inset-0 bg-cover bg-center opacity-100" style={{ backgroundImage: `url('/restaurant_bg.jpg'), url('${FALLBACK_BACKGROUND}')` }} />
+      <div
+        className="pointer-events-none fixed inset-0 bg-cover bg-center opacity-100"
+        style={{
+          backgroundImage: `url('/restaurant_bg.jpg'), url('${FALLBACK_BACKGROUND}')`,
+        }}
+      />
       <div className="pointer-events-none fixed inset-0 bg-black/55" />
 
       <header className="relative z-10 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3 text-stone-100">
           <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-2 sm:flex">
-            <Image src="/tableup-logo.png" alt="TableUp logo" width={34} height={34} className="rounded-full" />
+            <Image
+              src="/tableup-logo.png"
+              alt="TableUp logo"
+              width={34}
+              height={34}
+              className="rounded-full"
+            />
             <span className="text-sm font-semibold tracking-wide">TableUp</span>
           </div>
         </div>
 
         <nav className="relative z-10 flex items-center gap-3 text-sm text-stone-200">
-          <Link href="/" className="rounded-full px-4 py-2 transition hover:bg-white/10">Home</Link>
-          <Link href="/restaurant" className="rounded-full px-4 py-2 transition hover:bg-white/10">Restaurants</Link>
-          <Link href="/admin/approvals" className="rounded-full bg-emerald-500/20 px-4 py-2 text-emerald-200 transition hover:bg-emerald-500/30">Approvals</Link>
-          <Link href="/about" className="rounded-full px-4 py-2 transition hover:bg-white/10">About Us</Link>
+          <Link
+            href="/"
+            className="rounded-full px-4 py-2 transition hover:bg-white/10"
+          >
+            Home
+          </Link>
+          <Link
+            href="/restaurant"
+            className="rounded-full px-4 py-2 transition hover:bg-white/10"
+          >
+            Restaurants
+          </Link>
+          <Link
+            href="/admin/approvals"
+            className="rounded-full bg-emerald-500/20 px-4 py-2 text-emerald-200 transition hover:bg-emerald-500/30"
+          >
+            Approvals
+          </Link>
+          <Link
+            href="/about"
+            className="rounded-full px-4 py-2 transition hover:bg-white/10"
+          >
+            About Us
+          </Link>
         </nav>
 
         <div className="relative z-10 flex items-center gap-3">
@@ -230,34 +268,58 @@ export default function AdminApprovalsPage() {
         <div className="w-full rounded-[2rem] border border-white/10 bg-[#0f0906]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-3xl sm:p-8">
           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.45em] text-amber-300">Mesa de control</p>
-              <h1 className="text-3xl font-semibold text-white sm:text-4xl">Aprobación de restaurantes</h1>
+              <p className="text-sm uppercase tracking-[0.45em] text-amber-300">
+                Mesa de control
+              </p>
+              <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+                Aprobación de restaurantes
+              </h1>
             </div>
-            <p className="text-sm text-stone-300">Revisa las solicitudes, visualiza información y decide si apruebas o deniegas los restaurantes.</p>
+            <p className="text-sm text-stone-300">
+              Revisa las solicitudes, visualiza información y decide si apruebas
+              o deniegas los restaurantes.
+            </p>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-3xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{error}</div>
+            <div className="mb-4 rounded-3xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
+              {error}
+            </div>
           )}
 
           {loading ? (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-sm text-stone-200">Cargando solicitudes...</div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-sm text-stone-200">
+              Cargando solicitudes...
+            </div>
           ) : requests.length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-sm text-stone-300">No hay solicitudes pendientes.</div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-sm text-stone-300">
+              No hay solicitudes pendientes.
+            </div>
           ) : (
             <div className="grid gap-6">
               {requests.map((r) => (
-                <article key={r.id} className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
+                <article
+                  key={r.id}
+                  className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/20 backdrop-blur-xl"
+                >
                   <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <h2 className="text-xl font-semibold text-white">{r.name}</h2>
+                      <h2 className="text-xl font-semibold text-white">
+                        {r.name}
+                      </h2>
                       <div className="mt-1 space-y-1 text-sm text-stone-300">
                         <p>Categoría: {r.category}</p>
-                        <p>Estado: <span className="inline-block rounded-full px-2 py-1 text-xs font-semibold bg-amber-500/20 text-amber-200">{r.status}</span></p>
+                        <p>
+                          Estado:{" "}
+                          <span className="inline-block rounded-full px-2 py-1 text-xs font-semibold bg-amber-500/20 text-amber-200">
+                            {r.status}
+                          </span>
+                        </p>
                         <p>Teléfono: {r.phoneNumber}</p>
                         <p>Dirección: {r.address}</p>
-                        <p>Solicitado: {new Date(r.createdAt).toLocaleString()}</p>
-                        
+                        <p>
+                          Solicitado: {new Date(r.createdAt).toLocaleString()}
+                        </p>
                       </div>
                     </div>
 
@@ -267,14 +329,18 @@ export default function AdminApprovalsPage() {
                         onClick={() => changeRestaurantStatus(r.id, "Approved")}
                         className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {processingId === String(r.id) ? "Procesando..." : "Aprobar"}
+                        {processingId === String(r.id)
+                          ? "Procesando..."
+                          : "Aprobar"}
                       </button>
                       <button
                         disabled={processingId === String(r.id)}
                         onClick={() => changeRestaurantStatus(r.id, "Rejected")}
                         className="rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {processingId === String(r.id) ? "Procesando..." : "Denegar"}
+                        {processingId === String(r.id)
+                          ? "Procesando..."
+                          : "Denegar"}
                       </button>
                     </div>
                   </div>
@@ -282,12 +348,26 @@ export default function AdminApprovalsPage() {
                   {r.images && r.images.length > 0 && (
                     <div className="grid gap-3 sm:grid-cols-3">
                       {r.images.map((imgSrc, i) => (
-                        <div key={i} className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-                          <img src={API_URL+imgSrc} alt={`${r.name}-img-${i}`} className="h-36 w-full object-cover" />
+                        <div
+                          key={i}
+                          className="overflow-hidden rounded-3xl border border-white/10 bg-white/5"
+                        >
+                          <img
+                            src={API_URL + imgSrc}
+                            alt={`${r.name}-img-${i}`}
+                            className="h-36 w-full object-cover"
+                          />
                         </div>
                       ))}
                     </div>
                   )}
+
+                  <button
+                    onClick={() => router.push(`/restaurant/${r.id}`)}
+                    className="px-2 py-2 mt-5 font-bold bg-yellow-700 rounded-xl border-yellow-600 border hover:bg-yellow-700/50"
+                  >
+                    Ver Detalle
+                  </button>
                 </article>
               ))}
             </div>
@@ -298,14 +378,18 @@ export default function AdminApprovalsPage() {
       {notification && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-3xl border border-emerald-500/50 bg-emerald-950/80 p-4 text-sm text-emerald-200 backdrop-blur-xl shadow-2xl">
           <div>
-            <p className="font-semibold">{notification.name} fue {notification.status}.</p>
+            <p className="font-semibold">
+              {notification.name} fue {notification.status}.
+            </p>
           </div>
           <button
             onClick={undoStatusChange}
             disabled={processingId === String(notification.id)}
             className="whitespace-nowrap rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {processingId === String(notification.id) ? "Procesando..." : "Deshacer cambios"}
+            {processingId === String(notification.id)
+              ? "Procesando..."
+              : "Deshacer cambios"}
           </button>
         </div>
       )}

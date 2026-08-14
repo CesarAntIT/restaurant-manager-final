@@ -41,6 +41,21 @@ type SalesHistoryResponse = {
   };
 };
 
+
+function parseErrorMessage(err: any): string {
+  if (!err) return "Error al cargar el historial";
+  if (typeof err === "string") return err;
+  if (typeof err === "object") {
+    if (typeof err.message === "string") return err.message;
+    if (typeof err.Error === "string") return err.Error;
+    if (typeof err.error === "string") return err.error;
+    if (typeof err.error === "object" && typeof err.error.message === "string") {
+      return err.error.message;
+    }
+  }
+  return "Error al cargar el historial";
+}
+
 function formatDateInput(value: Date) {
   return value.toISOString().slice(0, 10);
 }
@@ -101,8 +116,8 @@ export default function WorkDaySalesHistoryPage() {
 
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        const message = json?.Error || json?.error || json?.message || "Error al cargar el historial";
-        setError(message);
+const rawErr = json?.Error || json?.error || json?.message || json;
+        setError(parseErrorMessage(rawErr));
         setWorkDays([]);
         setTopDishes([]);
         return;
@@ -110,7 +125,8 @@ export default function WorkDaySalesHistoryPage() {
 
       const json = (await res.json()) as SalesHistoryResponse;
       if (!json?.success) {
-        setError((json as any)?.Error || (json as any)?.error || "Error al cargar el historial");
+        const rawErr = (json as any)?.Error || (json as any)?.error || (json as any)?.message;
+        setError(parseErrorMessage(rawErr));
         setWorkDays([]);
         setTopDishes([]);
         return;
